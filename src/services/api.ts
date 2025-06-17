@@ -1,16 +1,23 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
+import axiosRetry from 'axios-retry';
+import config from '../config';
+import { authService } from './authService';
 
-// Create an axios instance with default config
+// Create axios instance with default config
 const api = axios.create({
-    baseURL: 'http://localhost:5000/api', // adjust this to match your backend URL
+    baseURL: config.apiUrl,
+    timeout: config.requestTimeout,
+    withCredentials: true,
     headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
     }
 });
 
-// Add a request interceptor for authentication
+// Add request interceptor
 api.interceptors.request.use(
     (config) => {
+        // Add auth token if available
         const token = localStorage.getItem('token');
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
@@ -21,5 +28,27 @@ api.interceptors.request.use(
         return Promise.reject(error);
     }
 );
+
+// Add response interceptor
+api.interceptors.response.use(
+    (response) => response,
+    (error: AxiosError) => {
+        if (error.response?.status === 401) {
+            // Handle unauthorized access
+            authService.logout();
+        }
+        return Promise.reject(error);
+    }
+);
+
+// Configure retry logic
+axiosRetry(api, {
+    retries: 3,
+    retryDelay: axiosRetry.exponentialDelay,
+    retryCondition: (error) => {
+        return axiosRetry.isNetworkOrIdempotentRequestError(error) || 
+               error.response?.status === 429; // Retry on rate limit
+    }
+});
 
 export default api; 

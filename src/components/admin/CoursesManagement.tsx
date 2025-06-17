@@ -90,7 +90,7 @@ export default function CoursesManagement() {
       setFormData({
         cName: course.cName,
         credits: course.credits,
-        pId: course.pId.toString(),
+        pId: course.pId ? course.pId.toString() : '',
         profesor: course.profesor
       });
     } else {
@@ -119,14 +119,22 @@ export default function CoursesManagement() {
   const handleSubmit = async () => {
     try {
       setError(null);
+      console.log('handleSubmit called. formData:', formData);
+      if (!formData.pId || formData.pId.trim() === "") {
+        setError("Professor is required.");
+        console.log("Validation failed: Professor is required.");
+        return;
+      }
       if (editingCourse) {
         setError('Update functionality not yet implemented');
+        console.log("Editing course is not implemented.");
+        return;
       } else {
         const payload = {
-          CName: formData.cName,
-          Credits: formData.credits,
-          PId: Number(formData.pId),
-          Profesor: formData.profesor
+          cName: formData.cName,
+          credits: formData.credits,
+          pId: formData.pId.trim(),
+          profesor: formData.profesor
         };
         console.log('Submitting course payload:', payload);
         await adminService.createCourse(payload);
@@ -135,6 +143,7 @@ export default function CoursesManagement() {
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save course');
+      console.log("Error in handleSubmit:", err);
     }
   };
 
@@ -289,7 +298,7 @@ export default function CoursesManagement() {
               <InputLabel>Professor</InputLabel>
               <Select
                 value={formData.pId}
-                onChange={(e) => handleProfessorChange(e.target.value)}
+                onChange={(e) => setFormData({ ...formData, pId: e.target.value })}
                 label="Professor"
               >
                 {professors.map((professor) => (

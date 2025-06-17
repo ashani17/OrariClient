@@ -30,9 +30,9 @@ import { adminService, CreateStudentDTO, CreateProfessorDTO, CreateAdminDTO, Upd
 interface User {
   id: string;
   email: string;
-  firstName: string;
-  lastName: string;
-  role: string;
+  firstName: string | null;
+  lastName: string | null;
+  roles: string[];
   phone?: string;
 }
 
@@ -69,6 +69,7 @@ export default function UsersManagement() {
     try {
       setLoading(true);
       const data = await adminService.getAllUsers();
+      console.log('Fetched users:', data);
       setUsers(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load users');
@@ -143,9 +144,9 @@ export default function UsersManagement() {
     setFormData({
       email: user.email,
       password: '',
-      firstName: user.firstName,
-      lastName: user.lastName,
-      role: user.role as 'Student' | 'Professor' | 'Admin',
+      firstName: user.firstName ?? '',
+      lastName: user.lastName ?? '',
+      role: (user.roles && user.roles.length > 0 ? user.roles[0] : 'Student') as 'Student' | 'Professor' | 'Admin',
       phone: user.phone || '',
     });
     setOpenDialog(true);
@@ -163,7 +164,7 @@ export default function UsersManagement() {
   };
 
   const filteredUsers = users.filter(user => 
-    selectedRole === 'all' || user.role === selectedRole
+    selectedRole === 'all' || user.roles.includes(selectedRole)
   );
 
   const getRoleColor = (role: string) => {
@@ -171,6 +172,7 @@ export default function UsersManagement() {
       case 'Admin': return 'error';
       case 'Professor': return 'warning';
       case 'Student': return 'success';
+      case 'No Role': return 'default';
       default: return 'default';
     }
   };
@@ -236,14 +238,22 @@ export default function UsersManagement() {
           <TableBody>
             {filteredUsers.map((user) => (
               <TableRow key={user.id}>
-                <TableCell>{user.firstName} {user.lastName}</TableCell>
+                <TableCell>{user.firstName ?? ''} {user.lastName ?? ''}</TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>
-                  <Chip 
-                    label={user.role} 
-                    color={getRoleColor(user.role) as any}
-                    size="small"
-                  />
+                  {user.roles && user.roles.length > 0 ? (
+                    user.roles.map((role, idx) => (
+                      <Chip
+                        key={role + '-' + user.id}
+                        label={role}
+                        color={getRoleColor(role) as any}
+                        size="small"
+                        sx={{ mr: 0.5 }}
+                      />
+                    ))
+                  ) : (
+                    <Chip label="No Role" color={getRoleColor('No Role') as any} size="small" />
+                  )}
                 </TableCell>
                 <TableCell>{user.phone || '-'}</TableCell>
                 <TableCell>

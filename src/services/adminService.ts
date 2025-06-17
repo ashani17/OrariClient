@@ -170,7 +170,7 @@ class AdminService {
     }
   }
 
-  async createCourse(data: CreateCourseDTO): Promise<any> {
+  async createCourse(data: any): Promise<any> {
     try {
       const response = await api.post('/admin/courses', data);
       return response.data;

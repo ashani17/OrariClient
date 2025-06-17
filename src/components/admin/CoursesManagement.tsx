@@ -42,6 +42,13 @@ interface Professor {
   email: string;
 }
 
+interface CourseForm {
+  cName: string;
+  credits: number;
+  pId: string; // string for Select, convert to number for backend
+  profesor: string;
+}
+
 export default function CoursesManagement() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [professors, setProfessors] = useState<Professor[]>([]);
@@ -49,11 +56,11 @@ export default function CoursesManagement() {
   const [error, setError] = useState<string | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
-  const [formData, setFormData] = useState<CreateCourseDTO>({
-    CName: '',
-    Credits: 0,
-    PId: 0,
-    Profesor: ''
+  const [formData, setFormData] = useState<CourseForm>({
+    cName: '',
+    credits: 0,
+    pId: '',
+    profesor: ''
   });
 
   useEffect(() => {
@@ -81,18 +88,18 @@ export default function CoursesManagement() {
     if (course) {
       setEditingCourse(course);
       setFormData({
-        CName: course.cName,
-        Credits: course.credits,
-        PId: course.pId,
-        Profesor: course.profesor
+        cName: course.cName,
+        credits: course.credits,
+        pId: course.pId.toString(),
+        profesor: course.profesor
       });
     } else {
       setEditingCourse(null);
       setFormData({
-        CName: '',
-        Credits: 0,
-        PId: 0,
-        Profesor: ''
+        cName: '',
+        credits: 0,
+        pId: '',
+        profesor: ''
       });
     }
     setOpenDialog(true);
@@ -102,10 +109,10 @@ export default function CoursesManagement() {
     setOpenDialog(false);
     setEditingCourse(null);
     setFormData({
-      CName: '',
-      Credits: 0,
-      PId: 0,
-      Profesor: ''
+      cName: '',
+      credits: 0,
+      pId: '',
+      profesor: ''
     });
   };
 
@@ -113,12 +120,16 @@ export default function CoursesManagement() {
     try {
       setError(null);
       if (editingCourse) {
-        // Update course (if update endpoint exists)
-        // await adminService.updateCourse(editingCourse.cId, formData);
         setError('Update functionality not yet implemented');
       } else {
-        // Create new course
-        await adminService.createCourse(formData);
+        const payload = {
+          CName: formData.cName,
+          Credits: formData.credits,
+          PId: Number(formData.pId),
+          Profesor: formData.profesor
+        };
+        console.log('Submitting course payload:', payload);
+        await adminService.createCourse(payload);
         handleCloseDialog();
         loadData();
       }
@@ -143,8 +154,8 @@ export default function CoursesManagement() {
     const professor = professors.find(p => p.id === professorId);
     setFormData({
       ...formData,
-      PId: parseInt(professorId),
-      Profesor: professor ? `${professor.firstName} ${professor.lastName}` : ''
+      pId: professorId,
+      profesor: professor ? `${professor.firstName} ${professor.lastName}` : ''
     });
   };
 
@@ -259,8 +270,8 @@ export default function CoursesManagement() {
             <TextField
               fullWidth
               label="Course Name"
-              value={formData.CName}
-              onChange={(e) => setFormData({ ...formData, CName: e.target.value })}
+              value={formData.cName}
+              onChange={(e) => setFormData({ ...formData, cName: e.target.value })}
               margin="normal"
               required
             />
@@ -268,8 +279,8 @@ export default function CoursesManagement() {
               fullWidth
               label="Credits"
               type="number"
-              value={formData.Credits}
-              onChange={(e) => setFormData({ ...formData, Credits: parseInt(e.target.value) || 0 })}
+              value={formData.credits}
+              onChange={(e) => setFormData({ ...formData, credits: parseInt(e.target.value) || 0 })}
               margin="normal"
               required
               inputProps={{ min: 1, max: 10 }}
@@ -277,7 +288,7 @@ export default function CoursesManagement() {
             <FormControl fullWidth margin="normal" required>
               <InputLabel>Professor</InputLabel>
               <Select
-                value={formData.PId.toString()}
+                value={formData.pId}
                 onChange={(e) => handleProfessorChange(e.target.value)}
                 label="Professor"
               >
@@ -295,7 +306,7 @@ export default function CoursesManagement() {
           <Button
             onClick={handleSubmit}
             variant="contained"
-            disabled={!formData.CName || !formData.PId || formData.Credits <= 0}
+            disabled={!formData.cName || !formData.pId || formData.credits <= 0}
           >
             {editingCourse ? 'Update' : 'Create'}
           </Button>

@@ -65,7 +65,12 @@ class AdminService {
   async getAllUsers(): Promise<any[]> {
     try {
       const response = await api.get('/admin/users');
-      return response.data;
+      // Handle reference object structure from JSON serialization
+      const data = response.data;
+      if (data && typeof data === 'object' && '$values' in data) {
+        return data.$values || [];
+      }
+      return Array.isArray(data) ? data : [];
     } catch (error) {
       if (error instanceof AxiosError) {
         throw new Error(error.response?.data?.message || 'Failed to fetch users');
@@ -77,7 +82,11 @@ class AdminService {
   async getAllStudents(): Promise<any[]> {
     try {
       const response = await api.get('/admin/users/students');
-      return response.data;
+      const data = response.data;
+      if (data && typeof data === 'object' && '$values' in data) {
+        return data.$values || [];
+      }
+      return Array.isArray(data) ? data : [];
     } catch (error) {
       if (error instanceof AxiosError) {
         throw new Error(error.response?.data?.message || 'Failed to fetch students');
@@ -89,7 +98,11 @@ class AdminService {
   async getAllProfessors(): Promise<any[]> {
     try {
       const response = await api.get('/admin/users/professors');
-      return response.data;
+      const data = response.data;
+      if (data && typeof data === 'object' && '$values' in data) {
+        return data.$values || [];
+      }
+      return Array.isArray(data) ? data : [];
     } catch (error) {
       if (error instanceof AxiosError) {
         throw new Error(error.response?.data?.message || 'Failed to fetch professors');
@@ -161,7 +174,11 @@ class AdminService {
   async getAllCourses(): Promise<any[]> {
     try {
       const response = await api.get('/admin/courses');
-      return response.data;
+      const data = response.data;
+      if (data && typeof data === 'object' && '$values' in data) {
+        return data.$values || [];
+      }
+      return Array.isArray(data) ? data : [];
     } catch (error) {
       if (error instanceof AxiosError) {
         throw new Error(error.response?.data?.message || 'Failed to fetch courses');
@@ -197,7 +214,11 @@ class AdminService {
   async getAllEnrollments(): Promise<any[]> {
     try {
       const response = await api.get('/admin/enrollments');
-      return response.data;
+      const data = response.data;
+      if (data && typeof data === 'object' && '$values' in data) {
+        return data.$values || [];
+      }
+      return Array.isArray(data) ? data : [];
     } catch (error) {
       if (error instanceof AxiosError) {
         throw new Error(error.response?.data?.message || 'Failed to fetch enrollments');
@@ -233,7 +254,11 @@ class AdminService {
   async getAllSchedules(): Promise<any[]> {
     try {
       const response = await api.get('/admin/schedules');
-      return response.data;
+      const data = response.data;
+      if (data && typeof data === 'object' && '$values' in data) {
+        return data.$values || [];
+      }
+      return Array.isArray(data) ? data : [];
     } catch (error) {
       if (error instanceof AxiosError) {
         throw new Error(error.response?.data?.message || 'Failed to fetch schedules');
@@ -245,7 +270,11 @@ class AdminService {
   async getAllRooms(): Promise<any[]> {
     try {
       const response = await api.get('/admin/rooms');
-      return response.data;
+      const data = response.data;
+      if (data && typeof data === 'object' && '$values' in data) {
+        return data.$values || [];
+      }
+      return Array.isArray(data) ? data : [];
     } catch (error) {
       if (error instanceof AxiosError) {
         throw new Error(error.response?.data?.message || 'Failed to fetch rooms');

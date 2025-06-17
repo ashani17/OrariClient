@@ -70,6 +70,9 @@ export default function UsersManagement() {
       setLoading(true);
       const data = await adminService.getAllUsers();
       console.log('Fetched users:', data);
+      console.log('First user roles:', data[0]?.roles);
+      console.log('First user roles type:', typeof data[0]?.roles);
+      console.log('First user roles is array:', Array.isArray(data[0]?.roles));
       setUsers(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load users');
@@ -140,13 +143,14 @@ export default function UsersManagement() {
   };
 
   const handleEditUser = (user: User) => {
+    const userRoles = getRoles(user);
     setEditingUser(user);
     setFormData({
       email: user.email,
       password: '',
       firstName: user.firstName ?? '',
       lastName: user.lastName ?? '',
-      role: (user.roles && user.roles.length > 0 ? user.roles[0] : 'Student') as 'Student' | 'Professor' | 'Admin',
+      role: (userRoles.length > 0 ? userRoles[0] : 'Student') as 'Student' | 'Professor' | 'Admin',
       phone: user.phone || '',
     });
     setOpenDialog(true);
@@ -163,9 +167,29 @@ export default function UsersManagement() {
     });
   };
 
-  const filteredUsers = users.filter(user => 
-    selectedRole === 'all' || user.roles.includes(selectedRole)
-  );
+  const getRoles = (user: any): string[] => {
+    if (!user.roles) return [];
+    
+    // Handle different possible formats
+    if (Array.isArray(user.roles)) {
+      return user.roles;
+    }
+    
+    if (typeof user.roles === 'string') {
+      return [user.roles];
+    }
+    
+    if (typeof user.roles === 'object' && user.roles.$values) {
+      return Array.isArray(user.roles.$values) ? user.roles.$values : [];
+    }
+    
+    return [];
+  };
+
+  const filteredUsers = users.filter(user => {
+    const userRoles = getRoles(user);
+    return selectedRole === 'all' || userRoles.includes(selectedRole);
+  });
 
   const getRoleColor = (role: string) => {
     switch (role) {
@@ -241,19 +265,23 @@ export default function UsersManagement() {
                 <TableCell>{user.firstName ?? ''} {user.lastName ?? ''}</TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>
-                  {user.roles && user.roles.length > 0 ? (
-                    user.roles.map((role, idx) => (
-                      <Chip
-                        key={role + '-' + user.id}
-                        label={role}
-                        color={getRoleColor(role) as any}
-                        size="small"
-                        sx={{ mr: 0.5 }}
-                      />
-                    ))
-                  ) : (
-                    <Chip label="No Role" color={getRoleColor('No Role') as any} size="small" />
-                  )}
+                  {(() => {
+                    const userRoles = getRoles(user);
+                    console.log('User roles for', user.email, ':', userRoles);
+                    return userRoles.length > 0 ? (
+                      userRoles.map((role, idx) => (
+                        <Chip
+                          key={role + '-' + user.id}
+                          label={role}
+                          color={getRoleColor(role) as any}
+                          size="small"
+                          sx={{ mr: 0.5 }}
+                        />
+                      ))
+                    ) : (
+                      <Chip label="No Role" color={getRoleColor('No Role') as any} size="small" />
+                    );
+                  })()}
                 </TableCell>
                 <TableCell>{user.phone || '-'}</TableCell>
                 <TableCell>

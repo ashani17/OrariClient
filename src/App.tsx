@@ -9,9 +9,14 @@ import { ResetPassword } from './pages/auth/ResetPassword';
 import { theme } from './theme';
 import { CssBaseline } from '@mui/material';
 import { useAuthStore } from './store/authStore';
+import { useApiHealth } from './hooks/useApiHealth';
+import AdminPanel from './pages/admin/AdminPanel';
 
 function App() {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
+  
+  // Add API health check
+  useApiHealth();
 
   return (
     <ThemeProvider theme={theme}>
@@ -56,6 +61,18 @@ function App() {
               ) : (
                 <ResetPassword />
               )
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                {user?.role === 'Admin' ? (
+                  <AdminPanel />
+                ) : (
+                  <Navigate to="/dashboard" replace />
+                )}
+              </ProtectedRoute>
             }
           />
           <Route

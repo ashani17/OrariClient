@@ -10,6 +10,7 @@ import {
   Paper,
   Link,
   LinearProgress,
+  Grid,
 } from '@mui/material';
 import { useAuthStore } from '../../store/authStore';
 import type { RegisterData } from '../../services/authService';
@@ -28,8 +29,9 @@ export const Register = () => {
   const [data, setData] = useState<RegisterData>({
     email: '',
     password: '',
+    confirmPassword: '',
     name: '',
-    surname: '',
+    lastName: '',
   });
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
@@ -55,6 +57,10 @@ export const Register = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validatePassword(data.password)) {
+      return;
+    }
+    if (data.password !== data.confirmPassword) {
+      setValidationErrors(['Passwords do not match']);
       return;
     }
     await register(data);
@@ -98,35 +104,39 @@ export const Register = () => {
           <Typography component="h1" variant="h5">
             Register
           </Typography>
-          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
+          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3, width: '100%' }}>
             {error && (
               <Alert severity="error" sx={{ mb: 2 }}>
                 {error}
               </Alert>
             )}
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
             <TextField
-              margin="normal"
               required
               fullWidth
               id="name"
               label="First Name"
               name="name"
               autoComplete="given-name"
-              autoFocus
               value={data.name}
               onChange={handleChange}
+                  autoFocus
             />
+              </Grid>
+              <Grid item xs={12} sm={6}>
             <TextField
-              margin="normal"
               required
               fullWidth
-              id="surname"
+                  id="lastName"
               label="Last Name"
-              name="surname"
+                  name="lastName"
               autoComplete="family-name"
-              value={data.surname}
+                  value={data.lastName}
               onChange={handleChange}
             />
+              </Grid>
+            </Grid>
             <TextField
               margin="normal"
               required
@@ -149,6 +159,18 @@ export const Register = () => {
               id="password"
               autoComplete="new-password"
               value={data.password}
+              onChange={handleChange}
+            />
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              name="confirmPassword"
+              label="Confirm Password"
+              type="password"
+              id="confirmPassword"
+              autoComplete="new-password"
+              value={data.confirmPassword}
               onChange={handleChange}
             />
             {data.password && (

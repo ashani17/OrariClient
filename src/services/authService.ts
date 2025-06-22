@@ -9,8 +9,9 @@ export interface LoginCredentials {
 export interface RegisterData {
   email: string;
   password: string;
+  confirmPassword: string;
   name: string;
-  surname: string;
+  lastName: string;
 }
 
 class AuthService {
@@ -40,6 +41,15 @@ class AuthService {
     await api.post('/auth/reset-password', { token, newPassword });
   }
 
+  async createFirstAdmin(data: { email: string; password: string; firstName: string; lastName: string }): Promise<AuthResponse> {
+    const response = await api.post<AuthResponse>('/auth/create-first-admin', data);
+    if (response.data.token) {
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+    }
+    return response.data;
+  }
+
   logout(): void {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -47,8 +57,13 @@ class AuthService {
 
   getCurrentUser(): User | null {
     const userStr = localStorage.getItem('user');
-    if (userStr) {
-      return JSON.parse(userStr);
+    if (userStr && userStr !== "undefined") {
+      try {
+        return JSON.parse(userStr);
+      } catch {
+        localStorage.removeItem('user');
+        return null;
+      }
     }
     return null;
   }

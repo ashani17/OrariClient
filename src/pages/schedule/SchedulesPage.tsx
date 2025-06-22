@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -16,6 +16,7 @@ import {
   Button,
   Tooltip,
   LinearProgress,
+  Alert,
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -23,28 +24,38 @@ import {
   Add as AddIcon,
 } from '@mui/icons-material';
 import { scheduleService } from '../../services/scheduleService';
+import { useApiRequest } from '../../hooks/useApiRequest';
 import type { Schedule } from '../../types/schedule';
 
 export const SchedulesPage = () => {
   const navigate = useNavigate();
-  const [schedules, setSchedules] = useState<Schedule[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchSchedules();
-  }, []);
+  const {
+    data: schedules = [],
+    isLoading,
+    error: apiError,
+    executeRequest,
+    cancelRequest
+  } = useApiRequest<Schedule[]>();
 
   const fetchSchedules = async () => {
     try {
-      setIsLoading(true);
-      const data = await scheduleService.getSchedules();
-      setSchedules(data);
+      await executeRequest(
+        {
+          method: 'GET',
+          url: '/schedules'
+        },
+        {
+          onError: (error) => {
+            setError(error.message);
+          }
+        }
+      );
     } catch (error) {
       console.error('Error fetching schedules:', error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -52,9 +63,10 @@ export const SchedulesPage = () => {
     if (window.confirm('Are you sure you want to delete this schedule?')) {
       try {
         await scheduleService.deleteSchedule(id);
-        setSchedules(schedules.filter(schedule => schedule.id !== id));
+        // Refresh the list after deletion
+        fetchSchedules();
       } catch (error) {
-        console.error('Error deleting schedule:', error);
+        setError(error instanceof Error ? error.message : 'Failed to delete schedule');
       }
     }
   };
@@ -80,6 +92,15 @@ export const SchedulesPage = () => {
     return days[day];
   };
 
+  // Fetch schedules on component mount
+  useEffect(() => {
+    fetchSchedules();
+    // Cleanup function to cancel any pending requests
+    return () => {
+      cancelRequest();
+    };
+  }, []);
+
   return (
     <Container maxWidth="lg">
       <Box sx={{ mt: 4, mb: 4 }}>
@@ -96,9 +117,15 @@ export const SchedulesPage = () => {
           </Button>
         </Box>
 
-        <Paper>
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error}
+          </Alert>
+        )}
+
           {isLoading && <LinearProgress />}
-          <TableContainer>
+
+        <TableContainer component={Paper}>
             <Table>
               <TableHead>
                 <TableRow>
@@ -112,8 +139,7 @@ export const SchedulesPage = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {schedules
-                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+              {schedules?.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                   .map((schedule) => (
                     <TableRow key={schedule.id} hover>
                       <TableCell>{schedule.courseName}</TableCell>
@@ -148,17 +174,16 @@ export const SchedulesPage = () => {
                   ))}
               </TableBody>
             </Table>
-          </TableContainer>
           <TablePagination
             rowsPerPageOptions={[5, 10, 25]}
             component="div"
-            count={schedules.length}
+            count={schedules?.length ?? 0}
             rowsPerPage={rowsPerPage}
             page={page}
             onPageChange={handleChangePage}
             onRowsPerPageChange={handleChangeRowsPerPage}
           />
-        </Paper>
+        </TableContainer>
       </Box>
     </Container>
   );

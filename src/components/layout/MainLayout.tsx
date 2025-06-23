@@ -27,10 +27,14 @@ import {
   Settings,
   AccountCircle,
   AdminPanelSettings,
+  ChevronLeft,
+  ChevronRight,
+  Chat,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { getRolesFromToken, decodeJwtToken } from '../../utils/jwtUtils';
+import FreeRoomsSidebar from '../FreeRoomsSidebar';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -40,7 +44,6 @@ const drawerWidth = 240;
 
 const menuItems = [
   { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard' },
-  { text: 'Schedule', icon: <Schedule />, path: '/schedule' },
   { text: 'Users', icon: <People />, path: '/users' },
   { text: 'Settings', icon: <Settings />, path: '/settings' },
 ];
@@ -52,6 +55,9 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [collapsed, setCollapsed] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [freeRoomsOpen, setFreeRoomsOpen] = useState(false);
 
   // Refresh user state from localStorage on mount
   useEffect(() => {
@@ -105,10 +111,35 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
   const tokenRoles = token ? getRolesFromToken(token) : [];
   const isAdminFromToken = tokenRoles.includes('Admin');
   
-  // Add admin menu items if user is admin (check both user object and token)
+  // Add 'My Schedule' for students and professors
+  const showMySchedule = user && (user.role === 'Student' || user.role === 'Professor');
+  const showChat = user && (user.role === 'Admin' || user.role === 'Professor');
+  
+  // Add 'Check Free Rooms' for professors and admins
+  const showFreeRooms = user && (user.role === 'Admin' || user.role === 'Professor');
+  
   const allMenuItems = (user?.role === 'Admin' || isAdminFromToken)
-    ? [...menuItems, { text: 'Admin Panel', icon: <AdminPanelSettings />, path: '/admin' }]
-    : menuItems;
+    ? [
+        ...menuItems,
+        { text: 'Check Free Rooms', icon: <Schedule />, path: '/free-rooms', action: () => setFreeRoomsOpen(true) },
+        { text: 'Admin Panel', icon: <AdminPanelSettings />, path: '/admin' }
+      ]
+    : showMySchedule
+      ? [
+          ...menuItems.slice(0, 1),
+          { text: 'My Schedule', icon: <Schedule />, path: '/my-schedule' },
+          ...(showChat ? [{ text: 'Chat', icon: <Chat />, path: '/chat' }] : []),
+          ...(showFreeRooms ? [{ text: 'Check Free Rooms', icon: <Schedule />, path: '/free-rooms', action: () => setFreeRoomsOpen(true) }] : []),
+          ...menuItems.slice(1)
+        ]
+      : showChat
+        ? [
+            ...menuItems.slice(0, 1),
+            { text: 'Chat', icon: <Chat />, path: '/chat' },
+            ...(showFreeRooms ? [{ text: 'Check Free Rooms', icon: <Schedule />, path: '/free-rooms', action: () => setFreeRoomsOpen(true) }] : []),
+            ...menuItems.slice(1)
+          ]
+        : menuItems;
 
   console.log('Menu items:', allMenuItems);
 
@@ -131,17 +162,20 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
 
   const drawer = (
     <Box>
-      <Toolbar />
+      <Toolbar sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', minHeight: 64 }}>
+        <IconButton onClick={() => setSidebarOpen(false)} size="small">
+          <ChevronLeft />
+        </IconButton>
+      </Toolbar>
       <List>
         {allMenuItems.map((item) => (
           <ListItem
             button
             key={item.text}
             onClick={() => {
-              navigate(item.path);
-              if (isMobile) {
-                handleDrawerToggle();
-              }
+              if (item.action) item.action();
+              else navigate(item.path);
+              setSidebarOpen(false);
             }}
           >
             <ListItemIcon>{item.icon}</ListItemIcon>
@@ -158,21 +192,24 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
       <AppBar
         position="fixed"
         sx={{
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          ml: { sm: `${drawerWidth}px` },
+          width: '100%',
+          ml: 0,
         }}
       >
         <Toolbar>
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            edge="start"
-            onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { sm: 'none' } }}
-          >
-            <MenuIcon />
-          </IconButton>
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
+          {/* Floating button to open sidebar */}
+          {!sidebarOpen && (
+            <IconButton
+              color="inherit"
+              aria-label="open drawer"
+              edge="start"
+              onClick={() => setSidebarOpen(true)}
+              sx={{ mr: 2, position: 'fixed', left: 16, top: 16, zIndex: 1301 }}
+            >
+              <MenuIcon />
+            </IconButton>
+          )}
+          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1, ml: sidebarOpen ? 0 : 6 }}>
             Orari
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -206,48 +243,40 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
             open={Boolean(anchorEl)}
             onClose={handleProfileMenuClose}
           >
-            <MenuItem onClick={handleProfileMenuClose}>
-              <Typography variant="body1">
-                {user?.email}
-              </Typography>
-            </MenuItem>
-            <Divider />
             <MenuItem onClick={handleLogout}>Logout</MenuItem>
           </Menu>
         </Toolbar>
       </AppBar>
-      <Box
-        component="nav"
-        sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
+      {/* Overlay Drawer for all screen sizes */}
+      <Drawer
+        variant="temporary"
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        ModalProps={{ keepMounted: true }}
+        sx={{
+          '& .MuiDrawer-paper': {
+            boxSizing: 'border-box',
+            width: drawerWidth,
+            zIndex: 1302,
+          },
+        }}
       >
-        <Drawer
-          variant={isMobile ? 'temporary' : 'permanent'}
-          open={isMobile ? mobileOpen : true}
-          onClose={handleDrawerToggle}
-          ModalProps={{
-            keepMounted: true, // Better open performance on mobile.
-          }}
-          sx={{
-            '& .MuiDrawer-paper': {
-              boxSizing: 'border-box',
-              width: drawerWidth,
-            },
-          }}
-        >
-          {drawer}
-        </Drawer>
-      </Box>
+        {drawer}
+      </Drawer>
       <Box
         component="main"
         sx={{
           flexGrow: 1,
           p: 3,
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
+          width: '100%',
+          minHeight: '100vh',
+          transition: 'width 0.2s',
         }}
       >
         <Toolbar />
         {children}
       </Box>
+      <FreeRoomsSidebar open={freeRoomsOpen} onClose={() => setFreeRoomsOpen(false)} />
     </Box>
   );
 }; 

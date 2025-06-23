@@ -11,6 +11,7 @@ import { CssBaseline } from '@mui/material';
 import { useAuthStore } from './store/authStore';
 import { useApiHealth } from './hooks/useApiHealth';
 import AdminPanel from './pages/admin/AdminPanel';
+import { MySchedulePage, ChatPage } from './pages';
 
 function App() {
   const { isAuthenticated, user } = useAuthStore();
@@ -83,6 +84,8 @@ function App() {
                   <Routes>
                     <Route path="/dashboard" element={<h1>Dashboard</h1>} />
                     <Route path="/schedule" element={<h1>Schedule</h1>} />
+                    <Route path="/my-schedule" element={<MySchedulePage />} />
+                    <Route path="/chat" element={<ChatPage />} />
                     <Route path="/users" element={<h1>Users</h1>} />
                     <Route path="/settings" element={<h1>Settings</h1>} />
                     <Route path="*" element={<Navigate to="/dashboard" replace />} />

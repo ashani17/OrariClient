@@ -16,12 +16,16 @@ import {
 import { useAuthStore } from '../../store/authStore';
 import type { Schedule } from '../../types/schedule';
 import { scheduleService } from '../../services/scheduleService';
+import FreeRoomsSidebar from '../../components/FreeRoomsSidebar';
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const [recentSchedules, setRecentSchedules] = useState<Schedule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [freeRoomsOpen, setFreeRoomsOpen] = useState(false);
+
+  const showFreeRooms = user && (user.role === 'Admin' || user.role === 'Professor');
 
   useEffect(() => {
     const fetchRecentSchedules = async () => {
@@ -85,6 +89,15 @@ export const DashboardPage = () => {
               >
                 Today's Schedule
               </Button>
+              {showFreeRooms && (
+                <Button
+                  variant="outlined"
+                  startIcon={<TodayIcon />}
+                  onClick={() => setFreeRoomsOpen(true)}
+                >
+                  Check Free Rooms
+                </Button>
+              )}
             </Box>
           </Paper>
         </Grid>
@@ -132,6 +145,7 @@ export const DashboardPage = () => {
           </Paper>
         </Grid>
       </Grid>
+      <FreeRoomsSidebar open={freeRoomsOpen} onClose={() => setFreeRoomsOpen(false)} />
     </Container>
   );
 }; 

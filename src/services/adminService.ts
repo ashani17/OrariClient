@@ -111,6 +111,38 @@ class AdminService {
     }
   }
 
+  async getAllAdmins(): Promise<any[]> {
+    try {
+      const response = await api.get('/admin/users/admins');
+      const data = response.data;
+      if (data && typeof data === 'object' && '$values' in data) {
+        return data.$values || [];
+      }
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        throw new Error(error.response?.data?.message || 'Failed to fetch admins');
+      }
+      throw error;
+    }
+  }
+
+  async getAllAdminsPublic(): Promise<any[]> {
+    try {
+      const response = await api.get('/admin/users/admins-public');
+      const data = response.data;
+      if (data && typeof data === 'object' && '$values' in data) {
+        return data.$values || [];
+      }
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        throw new Error(error.response?.data?.message || 'Failed to fetch admins');
+      }
+      throw error;
+    }
+  }
+
   async createStudent(data: CreateStudentDTO): Promise<any> {
     try {
       const response = await api.post('/admin/users/student', data);

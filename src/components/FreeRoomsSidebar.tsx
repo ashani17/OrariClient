@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Drawer, Box, Typography, IconButton, TextField, Button, List, ListItem, ListItemText } from '@mui/material';
+import { Drawer, Box, Typography, IconButton, TextField, Button, List, ListItem, ListItemText, Avatar } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import MeetingRoom from '@mui/icons-material/MeetingRoom';
 import roomService from '../services/roomService';
 
 interface FreeRoomsSidebarProps {
@@ -70,10 +71,15 @@ const FreeRoomsSidebar: React.FC<FreeRoomsSidebarProps> = ({ open, onClose }) =>
             <List>
               {rooms.map(room => (
                 <ListItem key={room.rId}>
-                  <ListItemText
-                    primary={room.rName}
-                    secondary={`Capacity: ${room.rCapacity} | Type: ${room.rType}`}
-                  />
+                  <Box display="flex" alignItems="center">
+                    <Avatar sx={{ width: 32, height: 32, mr: 1, bgcolor: 'primary.main' }}>
+                      <MeetingRoom />
+                    </Avatar>
+                    <ListItemText
+                      primary={room.rName}
+                      secondary={`Capacity: ${room.rCapacity} | Type: ${room.rType}`}
+                    />
+                  </Box>
                 </ListItem>
               ))}
             </List>

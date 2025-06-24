@@ -15,7 +15,8 @@ import {
   School,
   Assignment,
   Schedule,
-  MeetingRoom
+  MeetingRoom,
+  Book
 } from '@mui/icons-material';
 
 interface AdminSidebarProps {
@@ -32,10 +33,16 @@ const getIcon = (section: string) => {
       return <School />;
     case 'Enrollments':
       return <Assignment />;
+    case 'Departments':
+      return <Assignment />;
     case 'Schedules':
       return <Schedule />;
     case 'Rooms':
       return <MeetingRoom />;
+    case 'Study Programs':
+      return <School />;
+    case 'Study Programs with Courses':
+      return <Book />;
     default:
       return <People />;
   }

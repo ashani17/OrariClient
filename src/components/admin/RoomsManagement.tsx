@@ -23,7 +23,8 @@ import {
   Select,
   MenuItem,
   Chip,
-  Avatar
+  Avatar,
+  Autocomplete
 } from '@mui/material';
 import { Add, Edit, Delete, Refresh, MeetingRoom } from '@mui/icons-material';
 import { adminService, CreateRoomDTO } from '../../services/adminService';
@@ -59,10 +60,19 @@ export default function RoomsManagement() {
     rType: '',
     rDescription: ''
   });
+  const [search, setSearch] = useState('');
+  const [searchOptions, setSearchOptions] = useState<string[]>([]);
 
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (rooms.length > 0) {
+      const options = rooms.map(r => r.rName);
+      setSearchOptions(Array.from(new Set(options)));
+    }
+  }, [rooms]);
 
   const loadData = async () => {
     try {
@@ -166,6 +176,16 @@ export default function RoomsManagement() {
     return 'success';
   };
 
+  const filteredRooms = rooms.filter(room => {
+    const s = search.toLowerCase();
+    return (
+      room.rName.toLowerCase().includes(s) ||
+      room.rId.toString().includes(s) ||
+      room.rType.toLowerCase().includes(s) ||
+      (room.rDescription || '').toLowerCase().includes(s)
+    );
+  });
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
@@ -176,6 +196,20 @@ export default function RoomsManagement() {
 
   return (
     <Box>
+      {/* Search Bar */}
+      <Box mb={2}>
+        <Autocomplete
+          freeSolo
+          options={searchOptions}
+          inputValue={search}
+          onInputChange={(_, value) => setSearch(value)}
+          getOptionLabel={(option) => (typeof option === 'string' ? option : '')}
+          renderInput={(params) => (
+            <TextField {...params} label="Search Rooms" variant="outlined" size="small" />
+          )}
+          sx={{ width: 300 }}
+        />
+      </Box>
       {/* Header */}
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h5">Rooms Management</Typography>
@@ -219,7 +253,7 @@ export default function RoomsManagement() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {rooms.length === 0 ? (
+            {filteredRooms.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} align="center">
                   <Typography variant="body2" color="textSecondary">
@@ -228,7 +262,7 @@ export default function RoomsManagement() {
                 </TableCell>
               </TableRow>
             ) : (
-              rooms.map((room) => (
+              filteredRooms.map((room) => (
                 <TableRow key={room.rId}>
                   <TableCell>{room.rId}</TableCell>
                   <TableCell>

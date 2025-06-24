@@ -22,10 +22,12 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Chip
+  Chip,
+  Autocomplete
 } from '@mui/material';
 import { Add, Edit, Delete, Refresh } from '@mui/icons-material';
 import { adminService, CreateCourseDTO } from '../../services/adminService';
+import { StudyProgram } from '../../types';
 
 interface Course {
   cId: number;
@@ -33,6 +35,7 @@ interface Course {
   credits: number;
   pId: number;
   profesor: string;
+  spId: number;
 }
 
 interface Professor {
@@ -47,11 +50,13 @@ interface CourseForm {
   credits: number;
   pId: string; // string for Select, convert to number for backend
   profesor: string;
+  spId: string; // study program id as string for Select
 }
 
 export default function CoursesManagement() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [professors, setProfessors] = useState<Professor[]>([]);
+  const [studyPrograms, setStudyPrograms] = useState<StudyProgram[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
@@ -60,12 +65,22 @@ export default function CoursesManagement() {
     cName: '',
     credits: 0,
     pId: '',
-    profesor: ''
+    profesor: '',
+    spId: ''
   });
+  const [search, setSearch] = useState('');
+  const [searchOptions, setSearchOptions] = useState<string[]>([]);
 
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (courses.length > 0) {
+      const options = courses.map(c => c.cName);
+      setSearchOptions(Array.from(new Set(options)));
+    }
+  }, [courses]);
 
   const loadData = async () => {
     try {
@@ -84,6 +99,19 @@ export default function CoursesManagement() {
     }
   };
 
+  const loadStudyPrograms = async () => {
+    try {
+      const programs = await adminService.getAllStudyPrograms();
+      setStudyPrograms(programs);
+    } catch (err) {
+      // Optionally handle error
+    }
+  };
+
+  useEffect(() => {
+    loadStudyPrograms();
+  }, []);
+
   const handleOpenDialog = (course?: Course) => {
     if (course) {
       setEditingCourse(course);
@@ -91,7 +119,8 @@ export default function CoursesManagement() {
         cName: course.cName,
         credits: course.credits,
         pId: course.pId ? course.pId.toString() : '',
-        profesor: course.profesor
+        profesor: course.profesor,
+        spId: course.spId ? course.spId.toString() : ''
       });
     } else {
       setEditingCourse(null);
@@ -99,7 +128,8 @@ export default function CoursesManagement() {
         cName: '',
         credits: 0,
         pId: '',
-        profesor: ''
+        profesor: '',
+        spId: ''
       });
     }
     setOpenDialog(true);
@@ -112,38 +142,38 @@ export default function CoursesManagement() {
       cName: '',
       credits: 0,
       pId: '',
-      profesor: ''
+      profesor: '',
+      spId: ''
     });
   };
 
   const handleSubmit = async () => {
     try {
       setError(null);
-      console.log('handleSubmit called. formData:', formData);
       if (!formData.pId || formData.pId.trim() === "") {
         setError("Professor is required.");
-        console.log("Validation failed: Professor is required.");
         return;
       }
+      if (!formData.spId || formData.spId.trim() === "") {
+        setError("Study Program is required.");
+        return;
+      }
+      const payload = {
+        cName: formData.cName,
+        credits: formData.credits,
+        pId: formData.pId.trim(),
+        profesor: formData.profesor,
+        studyProgramId: Number(formData.spId)
+      };
       if (editingCourse) {
-        setError('Update functionality not yet implemented');
-        console.log("Editing course is not implemented.");
-        return;
+        await adminService.updateCourse(editingCourse.cId, payload);
       } else {
-        const payload = {
-          cName: formData.cName,
-          credits: formData.credits,
-          pId: formData.pId.trim(),
-          profesor: formData.profesor
-        };
-        console.log('Submitting course payload:', payload);
         await adminService.createCourse(payload);
-        handleCloseDialog();
-        loadData();
       }
+      handleCloseDialog();
+      loadData();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save course');
-      console.log("Error in handleSubmit:", err);
     }
   };
 
@@ -173,6 +203,17 @@ export default function CoursesManagement() {
     return professor ? `${professor.firstName} ${professor.lastName}` : 'Unknown Professor';
   };
 
+  const filteredCourses = courses.filter(course => {
+    const s = search.toLowerCase();
+    const professorName = getProfessorName(course.pId).toLowerCase();
+    return (
+      course.cName.toLowerCase().includes(s) ||
+      course.cId.toString().includes(s) ||
+      course.credits.toString().includes(s) ||
+      professorName.includes(s)
+    );
+  });
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
@@ -183,6 +224,20 @@ export default function CoursesManagement() {
 
   return (
     <Box>
+      {/* Search Bar */}
+      <Box mb={2}>
+        <Autocomplete
+          freeSolo
+          options={searchOptions}
+          inputValue={search}
+          onInputChange={(_, value) => setSearch(value)}
+          getOptionLabel={(option) => (typeof option === 'string' ? option : '')}
+          renderInput={(params) => (
+            <TextField {...params} label="Search Courses" variant="outlined" size="small" />
+          )}
+          sx={{ width: 300 }}
+        />
+      </Box>
       {/* Header */}
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h5">Courses Management</Typography>
@@ -221,20 +276,21 @@ export default function CoursesManagement() {
               <TableCell>Course Name</TableCell>
               <TableCell>Credits</TableCell>
               <TableCell>Professor</TableCell>
+              <TableCell>Study Programs</TableCell>
               <TableCell align="center">Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {courses.length === 0 ? (
+            {filteredCourses.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} align="center">
+                <TableCell colSpan={6} align="center">
                   <Typography variant="body2" color="textSecondary">
                     No courses found
                   </Typography>
                 </TableCell>
               </TableRow>
             ) : (
-              courses.map((course) => (
+              filteredCourses.map((course) => (
                 <TableRow key={course.cId}>
                   <TableCell>{course.cId}</TableCell>
                   <TableCell>
@@ -246,6 +302,7 @@ export default function CoursesManagement() {
                     <Chip label={course.credits} size="small" color="primary" />
                   </TableCell>
                   <TableCell>{getProfessorName(course.pId)}</TableCell>
+                  <TableCell>{studyPrograms.filter(sp => course.spId != null && sp.spId != null && course.spId.toString() === sp.spId.toString()).map(sp => sp.spName).join(', ')}</TableCell>
                   <TableCell align="center">
                     <IconButton
                       size="small"
@@ -294,6 +351,20 @@ export default function CoursesManagement() {
               required
               inputProps={{ min: 1, max: 10 }}
             />
+            <FormControl fullWidth margin="normal" required>
+              <InputLabel>Study Program</InputLabel>
+              <Select
+                value={formData.spId}
+                onChange={(e) => setFormData({ ...formData, spId: e.target.value })}
+                label="Study Program"
+              >
+                {studyPrograms.map((sp) => (
+                  <MenuItem key={sp.spId} value={sp.spId.toString()}>
+                    {sp.spName}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
             <FormControl fullWidth margin="normal" required>
               <InputLabel>Professor</InputLabel>
               <Select

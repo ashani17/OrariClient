@@ -242,6 +242,18 @@ class AdminService {
     }
   }
 
+  async updateCourse(courseId: number, data: any): Promise<any> {
+    try {
+      const response = await api.put(`/admin/courses/${courseId}`, data);
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        throw new Error(error.response?.data?.message || 'Failed to update course');
+      }
+      throw error;
+    }
+  }
+
   // Enrollment Management
   async getAllEnrollments(): Promise<any[]> {
     try {
@@ -357,6 +369,110 @@ class AdminService {
     } catch (error) {
       if (error instanceof AxiosError) {
         throw new Error(error.response?.data?.message || 'Failed to delete schedule');
+      }
+      throw error;
+    }
+  }
+
+  // Study Program Management
+  async getAllStudyPrograms(): Promise<any[]> {
+    try {
+      const response = await api.get('/studyprogram');
+      const data = response.data;
+      if (data && typeof data === 'object' && '$values' in data) {
+        return data.$values || [];
+      }
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        throw new Error(error.response?.data?.message || 'Failed to fetch study programs');
+      }
+      throw error;
+    }
+  }
+
+  async createStudyProgram(data: any): Promise<any> {
+    try {
+      const response = await api.post('/studyprogram', data);
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        throw new Error(error.response?.data?.message || 'Failed to create study program');
+      }
+      throw error;
+    }
+  }
+
+  async updateStudyProgram(id: number, data: any): Promise<any> {
+    try {
+      const response = await api.put(`/studyprogram?id=${id}`, data);
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        throw new Error(error.response?.data?.message || 'Failed to update study program');
+      }
+      throw error;
+    }
+  }
+
+  async deleteStudyProgram(id: number): Promise<void> {
+    try {
+      await api.delete(`/studyprogram/${id}`);
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        throw new Error(error.response?.data?.message || 'Failed to delete study program');
+      }
+      throw error;
+    }
+  }
+
+  // Department Management
+  async getAllDepartments(): Promise<any[]> {
+    try {
+      const response = await api.get('/department');
+      const data = response.data;
+      if (data && typeof data === 'object' && '$values' in data) {
+        return data.$values || [];
+      }
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        throw new Error(error.response?.data?.message || 'Failed to fetch departments');
+      }
+      throw error;
+    }
+  }
+
+  async createDepartment(data: any): Promise<any> {
+    try {
+      const response = await api.post('/department', data);
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        throw new Error(error.response?.data?.message || 'Failed to create department');
+      }
+      throw error;
+    }
+  }
+
+  async updateDepartment(id: number, data: any): Promise<any> {
+    try {
+      const response = await api.put(`/department?id=${id}`, data);
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        throw new Error(error.response?.data?.message || 'Failed to update department');
+      }
+      throw error;
+    }
+  }
+
+  async deleteDepartment(id: number): Promise<void> {
+    try {
+      await api.delete(`/department/${id}`);
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        throw new Error(error.response?.data?.message || 'Failed to delete department');
       }
       throw error;
     }

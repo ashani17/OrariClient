@@ -71,6 +71,14 @@ class AuthService {
   isAuthenticated(): boolean {
     return !!localStorage.getItem('token');
   }
+
+  async updateProfile(data: { name: string; surname: string; email: string }): Promise<User> {
+    const response = await api.put<User>('/auth/update-profile', data);
+    if (response.data) {
+      localStorage.setItem('user', JSON.stringify(response.data));
+    }
+    return response.data;
+  }
 }
 
 export const authService = new AuthService(); 

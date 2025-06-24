@@ -7,9 +7,12 @@ import CoursesManagement from '../../components/admin/CoursesManagement';
 import EnrollmentsManagement from '../../components/admin/EnrollmentsManagement';
 import SchedulesManagement from '../../components/admin/SchedulesManagement';
 import RoomsManagement from '../../components/admin/RoomsManagement';
+import StudyProgramsManagement from '../../components/admin/StudyProgramsManagement';
+import StudyProgramCoursesManagement from '../../components/admin/StudyProgramCoursesManagement';
+import DepartmentsManagement from '../../components/admin/DepartmentsManagement';
 import { useState } from 'react';
 
-const sections = ['Users', 'Courses', 'Enrollments', 'Schedules', 'Rooms'];
+const sections = ['Users', 'Courses', 'Enrollments', 'Departments', 'Schedules', 'Rooms', 'Study Programs', 'Study Programs with Courses'];
 
 export default function AdminPanel() {
   const [selected, setSelected] = useState('Users');
@@ -39,8 +42,11 @@ export default function AdminPanel() {
           {selected === 'Users' && <UsersManagement />}
           {selected === 'Courses' && <CoursesManagement />}
           {selected === 'Enrollments' && <EnrollmentsManagement />}
+          {selected === 'Departments' && <DepartmentsManagement />}
           {selected === 'Schedules' && <SchedulesManagement />}
           {selected === 'Rooms' && <RoomsManagement />}
+          {selected === 'Study Programs' && <StudyProgramsManagement />}
+          {selected === 'Study Programs with Courses' && <StudyProgramCoursesManagement />}
         </Box>
       </Box>
     </Box>

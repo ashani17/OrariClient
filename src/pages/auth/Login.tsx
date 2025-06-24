@@ -22,9 +22,10 @@ import {
 import { useAuthStore } from '../../store/authStore';
 import type { LoginCredentials } from '../../services/authService';
 import api from '../../services/api';
+import utiranaLogo from 'C:/Users/User/source/repos/OrariClient/src/assets/University_of_Tirana_logo.png';
 
 function PublicSchedulesBackgroundTable() {
-  const [schedules, setSchedules] = useState<any[]>([]);
+  const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -140,76 +141,85 @@ export const Login = () => {
   return (
     <Box sx={{ position: 'relative', minHeight: '100vh', width: '100vw', overflow: 'hidden' }}>
       <PublicSchedulesBackgroundTable />
-      <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'flex-start', alignItems: 'center', minHeight: '100vh', pl: 0, ml: 10 }}>
-        <Box sx={{ width: 400, maxWidth: '100%' }}>
-          <Paper
-            elevation={3}
+      <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'flex-start', alignItems: 'flex-start', minHeight: '100vh', pl: 10, ml: 0 }}>
+        <Container component="main" maxWidth="xs" sx={{ ml: 0 }}>
+          <Box
             sx={{
-              padding: 4,
+              marginTop: 8,
               display: 'flex',
               flexDirection: 'column',
-              alignItems: 'center',
-              width: '100%',
+              alignItems: 'flex-start',
             }}
           >
-            <Typography component="h1" variant="h5">
-              Sign in
-            </Typography>
-            <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
-              {error && (
-                <Alert severity="error" sx={{ mb: 2 }}>
-                  {error}
-                </Alert>
-              )}
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                id="email"
-                label="Email Address"
-                name="email"
-                autoComplete="email"
-                autoFocus
-                value={credentials.email}
-                onChange={handleChange}
-              />
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                name="password"
-                label="Password"
-                type="password"
-                id="password"
-                autoComplete="current-password"
-                value={credentials.password}
-                onChange={handleChange}
-              />
-              <Button
-                type="submit"
-                fullWidth
-                variant="contained"
-                sx={{ mt: 3, mb: 2 }}
-                disabled={isLoading}
-              >
-                {isLoading ? 'Signing in...' : 'Sign In'}
-              </Button>
-              <Stack spacing={1} sx={{ textAlign: 'center' }}>
-                <Link component={RouterLink} to="/register" variant="body2">
-                  Don't have an account? Sign up
+            <Paper
+              elevation={3}
+              sx={{
+                padding: 4,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                width: '100%',
+              }}
+            >
+              <Typography component="h1" variant="h5">
+                Sign in
+              </Typography>
+              <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
+                {error && (
+                  <Alert severity="error" sx={{ mb: 2 }}>
+                    {error}
+                  </Alert>
+                )}
+                <TextField
+                  margin="normal"
+                  required
+                  fullWidth
+                  id="email"
+                  label="Email Address"
+                  name="email"
+                  autoComplete="email"
+                  autoFocus
+                  value={credentials.email}
+                  onChange={handleChange}
+                />
+                <TextField
+                  margin="normal"
+                  required
+                  fullWidth
+                  name="password"
+                  label="Password"
+                  type="password"
+                  id="password"
+                  autoComplete="current-password"
+                  value={credentials.password}
+                  onChange={handleChange}
+                />
+                <Button
+                  type="submit"
+                  fullWidth
+                  variant="contained"
+                  sx={{ mt: 3, mb: 2 }}
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Signing in...' : 'Sign In'}
+                </Button>
+                <Stack spacing={1} sx={{ textAlign: 'center' }}>
+                  <Link component={RouterLink} to="/register" variant="body2">
+                    Don't have an account? Sign up
+                  </Link>
+                  <Link component={RouterLink} to="/forgot-password" variant="body2">
+                    Forgot your password?
+                  </Link>
+                </Stack>
+              </Box>
+              <Box mt={2} textAlign="center">
+                <Link component={RouterLink} to="/schedules" style={{ textDecoration: 'none', color: '#1976d2', fontWeight: 500, fontSize: '1.3rem', display: 'inline-block', margin: '12px auto 0 auto' }}>
+                  View Public Schedules
                 </Link>
-                <Link component={RouterLink} to="/forgot-password" variant="body2">
-                  Forgot your password?
-                </Link>
-              </Stack>
-            </Box>
-            <Box mt={2} textAlign="center">
-              <Link component={RouterLink} to="/schedules" style={{ textDecoration: 'none', color: '#1976d2', fontWeight: 500 }}>
-                View Public Schedules
-              </Link>
-            </Box>
-          </Paper>
-        </Box>
+              </Box>
+            </Paper>
+          </Box>
+        </Container>
       </Box>
     </Box>
   );

@@ -68,10 +68,6 @@ function addDays(date: Date, days: number) {
   return d;
 }
 
-function isSameDay(d1: Date, d2: Date) {
-  return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
-}
-
 function isDateInRange(date: Date, start: Date, end: Date) {
   return date >= start && date <= end;
 }

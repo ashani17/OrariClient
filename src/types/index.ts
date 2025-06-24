@@ -16,4 +16,34 @@ export interface AuthResponse {
 export interface ApiError {
     message: string;
     statusCode: number;
+}
+
+export interface StudyProgram {
+    spId: number;
+    spName: string;
+    dId: number;
+    dName: string;
+}
+
+export interface CreateStudyProgramDto {
+    spName: string;
+    dId: number;
+}
+
+export interface UpdateStudyProgramDto {
+    spName: string;
+    dId: number;
+}
+
+export interface Department {
+    dId: number;
+    dName: string;
+}
+
+export interface CreateDepartmentDto {
+    dName: string;
+}
+
+export interface UpdateDepartmentDto {
+    dName: string;
 } 

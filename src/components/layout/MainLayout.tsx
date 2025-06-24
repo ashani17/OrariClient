@@ -18,6 +18,7 @@ import {
   MenuItem,
   Avatar,
   Divider,
+  Badge,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -30,21 +31,31 @@ import {
   ChevronLeft,
   ChevronRight,
   Chat,
+  MeetingRoom,
+  CalendarMonth,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { getRolesFromToken, decodeJwtToken } from '../../utils/jwtUtils';
 import FreeRoomsSidebar from '../FreeRoomsSidebar';
+import chatService from '../../services/chatService';
+import { adminService } from '../../services/adminService';
 
 interface MainLayoutProps {
   children: ReactNode;
 }
 
+interface MenuItemType {
+  text: string;
+  icon: React.ReactNode;
+  path: string;
+  action?: () => void;
+}
+
 const drawerWidth = 240;
 
-const menuItems = [
-  { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard' },
-  { text: 'Users', icon: <People />, path: '/users' },
+const menuItems: MenuItemType[] = [
+  { text: 'Homepage', icon: <Dashboard />, path: '/dashboard' },
   { text: 'Settings', icon: <Settings />, path: '/settings' },
 ];
 
@@ -58,6 +69,7 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
   const [collapsed, setCollapsed] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [freeRoomsOpen, setFreeRoomsOpen] = useState(false);
+  const [newChatCount, setNewChatCount] = useState(0);
 
   // Refresh user state from localStorage on mount
   useEffect(() => {
@@ -118,10 +130,34 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
   // Add 'Check Free Rooms' for professors and admins
   const showFreeRooms = user && (user.role === 'Admin' || user.role === 'Professor');
   
+  useEffect(() => {
+    const fetchNewChats = async () => {
+      if (user?.role !== 'Admin') return;
+      try {
+        const users = await adminService.getAllUsers();
+        const professors = users.filter((u) => Array.isArray(u.roles) && u.roles.includes('Professor'));
+        let count = 0;
+        for (const prof of professors) {
+          const res = await chatService.fetchProfessorConversation(prof.id);
+          const messages = res.data;
+          if (messages && messages.length > 0) {
+            const lastMsg = messages[messages.length - 1];
+            if (lastMsg.senderId === prof.id) count++;
+          }
+        }
+        setNewChatCount(count);
+      } catch {
+        setNewChatCount(0);
+      }
+    };
+    fetchNewChats();
+  }, [user?.role]);
+
   const allMenuItems = (user?.role === 'Admin' || isAdminFromToken)
     ? [
         ...menuItems,
-        { text: 'Check Free Rooms', icon: <Schedule />, path: '/free-rooms', action: () => setFreeRoomsOpen(true) },
+        { text: 'Chat', icon: <Chat />, path: '/chat' },
+        { text: 'Check Free Rooms', icon: <MeetingRoom />, path: '/free-rooms', action: () => setFreeRoomsOpen(true) },
         { text: 'Admin Panel', icon: <AdminPanelSettings />, path: '/admin' }
       ]
     : showMySchedule
@@ -129,17 +165,19 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
           ...menuItems.slice(0, 1),
           { text: 'My Schedule', icon: <Schedule />, path: '/my-schedule' },
           ...(showChat ? [{ text: 'Chat', icon: <Chat />, path: '/chat' }] : []),
-          ...(showFreeRooms ? [{ text: 'Check Free Rooms', icon: <Schedule />, path: '/free-rooms', action: () => setFreeRoomsOpen(true) }] : []),
+          ...(showFreeRooms ? [{ text: 'Check Free Rooms', icon: <MeetingRoom />, path: '/free-rooms', action: () => setFreeRoomsOpen(true) }] : []),
           ...menuItems.slice(1)
         ]
       : showChat
         ? [
             ...menuItems.slice(0, 1),
             { text: 'Chat', icon: <Chat />, path: '/chat' },
-            ...(showFreeRooms ? [{ text: 'Check Free Rooms', icon: <Schedule />, path: '/free-rooms', action: () => setFreeRoomsOpen(true) }] : []),
+            ...(showFreeRooms ? [{ text: 'Check Free Rooms', icon: <MeetingRoom />, path: '/free-rooms', action: () => setFreeRoomsOpen(true) }] : []),
             ...menuItems.slice(1)
           ]
-        : menuItems;
+        : [
+            ...menuItems
+          ];
 
   console.log('Menu items:', allMenuItems);
 

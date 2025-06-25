@@ -6,15 +6,28 @@ import { Login } from './pages/auth/Login';
 import { Register } from './pages/auth/Register';
 import { ForgotPassword } from './pages/auth/ForgotPassword';
 import { ResetPassword } from './pages/auth/ResetPassword';
-import { theme } from './theme';
+import EmailConfirmation from './pages/auth/EmailConfirmation';
+import { theme, darkTheme } from './theme';
 import { CssBaseline } from '@mui/material';
 import { useAuthStore } from './store/authStore';
+import { useApiHealth } from './hooks/useApiHealth';
+import AdminPanel from './pages/admin/AdminPanel';
+import { MySchedulePage, ChatPage, PublicSchedules, Settings } from './pages';
+import { useEffect, useState } from 'react';
+import DashboardPage from './pages/dashboard/DashboardPage';
 
 function App() {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
+  const [mode, setMode] = useState<'light' | 'dark'>(() => localStorage.getItem('themeMode') === 'dark' ? 'dark' : 'light');
+  useEffect(() => {
+    localStorage.setItem('themeMode', mode);
+  }, [mode]);
+  
+  // Add API health check
+  useApiHealth();
 
   return (
-    <ThemeProvider theme={theme}>
+    <ThemeProvider theme={mode === 'dark' ? darkTheme : theme}>
       <CssBaseline />
       <BrowserRouter>
         <Routes>
@@ -59,15 +72,39 @@ function App() {
             }
           />
           <Route
+            path="/confirm-email"
+            element={<EmailConfirmation />}
+          />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                {user?.role === 'Admin' ? (
+                  <AdminPanel />
+                ) : (
+                  <Navigate to="/dashboard" replace />
+                )}
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/schedules"
+            element={
+              <PublicSchedules />
+            }
+          />
+          <Route
             path="/*"
             element={
               <ProtectedRoute>
                 <MainLayout>
                   <Routes>
-                    <Route path="/dashboard" element={<h1>Dashboard</h1>} />
+                    <Route path="/dashboard" element={<DashboardPage />} />
                     <Route path="/schedule" element={<h1>Schedule</h1>} />
+                    <Route path="/my-schedule" element={<MySchedulePage />} />
+                    <Route path="/chat" element={<ChatPage />} />
                     <Route path="/users" element={<h1>Users</h1>} />
-                    <Route path="/settings" element={<h1>Settings</h1>} />
+                    <Route path="/settings" element={<Settings mode={mode} setMode={setMode} />} />
                     <Route path="*" element={<Navigate to="/dashboard" replace />} />
                   </Routes>
                 </MainLayout>

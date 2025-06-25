@@ -27,7 +27,6 @@ import {
 } from '@mui/material';
 import { Add, Edit, Delete, Refresh } from '@mui/icons-material';
 import { adminService, CreateCourseDTO } from '../../services/adminService';
-import { StudyProgram } from '../../types';
 
 interface Course {
   cId: number;
@@ -35,7 +34,6 @@ interface Course {
   credits: number;
   pId: number;
   profesor: string;
-  spId: number;
 }
 
 interface Professor {
@@ -50,13 +48,11 @@ interface CourseForm {
   credits: number;
   pId: string; // string for Select, convert to number for backend
   profesor: string;
-  spId: string; // study program id as string for Select
 }
 
 export default function CoursesManagement() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [professors, setProfessors] = useState<Professor[]>([]);
-  const [studyPrograms, setStudyPrograms] = useState<StudyProgram[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
@@ -66,7 +62,6 @@ export default function CoursesManagement() {
     credits: 0,
     pId: '',
     profesor: '',
-    spId: ''
   });
   const [search, setSearch] = useState('');
   const [searchOptions, setSearchOptions] = useState<string[]>([]);
@@ -99,19 +94,6 @@ export default function CoursesManagement() {
     }
   };
 
-  const loadStudyPrograms = async () => {
-    try {
-      const programs = await adminService.getAllStudyPrograms();
-      setStudyPrograms(programs);
-    } catch (err) {
-      // Optionally handle error
-    }
-  };
-
-  useEffect(() => {
-    loadStudyPrograms();
-  }, []);
-
   const handleOpenDialog = (course?: Course) => {
     if (course) {
       setEditingCourse(course);
@@ -120,7 +102,6 @@ export default function CoursesManagement() {
         credits: course.credits,
         pId: course.pId ? course.pId.toString() : '',
         profesor: course.profesor,
-        spId: course.spId ? course.spId.toString() : ''
       });
     } else {
       setEditingCourse(null);
@@ -129,7 +110,6 @@ export default function CoursesManagement() {
         credits: 0,
         pId: '',
         profesor: '',
-        spId: ''
       });
     }
     setOpenDialog(true);
@@ -143,7 +123,6 @@ export default function CoursesManagement() {
       credits: 0,
       pId: '',
       profesor: '',
-      spId: ''
     });
   };
 
@@ -154,16 +133,11 @@ export default function CoursesManagement() {
         setError("Professor is required.");
         return;
       }
-      if (!formData.spId || formData.spId.trim() === "") {
-        setError("Study Program is required.");
-        return;
-      }
       const payload = {
         cName: formData.cName,
         credits: formData.credits,
         pId: formData.pId.trim(),
-        profesor: formData.profesor,
-        studyProgramId: Number(formData.spId)
+        profesor: formData.profesor
       };
       if (editingCourse) {
         await adminService.updateCourse(editingCourse.cId, payload);
@@ -276,14 +250,13 @@ export default function CoursesManagement() {
               <TableCell>Course Name</TableCell>
               <TableCell>Credits</TableCell>
               <TableCell>Professor</TableCell>
-              <TableCell>Study Programs</TableCell>
               <TableCell align="center">Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {filteredCourses.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} align="center">
+                <TableCell colSpan={5} align="center">
                   <Typography variant="body2" color="textSecondary">
                     No courses found
                   </Typography>
@@ -302,7 +275,6 @@ export default function CoursesManagement() {
                     <Chip label={course.credits} size="small" color="primary" />
                   </TableCell>
                   <TableCell>{getProfessorName(course.pId)}</TableCell>
-                  <TableCell>{studyPrograms.filter(sp => course.spId != null && sp.spId != null && course.spId.toString() === sp.spId.toString()).map(sp => sp.spName).join(', ')}</TableCell>
                   <TableCell align="center">
                     <IconButton
                       size="small"
@@ -351,20 +323,6 @@ export default function CoursesManagement() {
               required
               inputProps={{ min: 1, max: 10 }}
             />
-            <FormControl fullWidth margin="normal" required>
-              <InputLabel>Study Program</InputLabel>
-              <Select
-                value={formData.spId}
-                onChange={(e) => setFormData({ ...formData, spId: e.target.value })}
-                label="Study Program"
-              >
-                {studyPrograms.map((sp) => (
-                  <MenuItem key={sp.spId} value={sp.spId.toString()}>
-                    {sp.spName}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
             <FormControl fullWidth margin="normal" required>
               <InputLabel>Professor</InputLabel>
               <Select

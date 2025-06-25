@@ -17,8 +17,14 @@ import {
   InputLabel,
   CircularProgress,
   Chip,
-  Button
+  Button,
+  Card,
+  CardContent,
+  Grid,
+  IconButton,
+  useTheme
 } from '@mui/material';
+import { ChevronLeft, ChevronRight } from '@mui/icons-material';
 import api from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
@@ -49,10 +55,26 @@ interface FullSchedule {
   year: number;
 }
 
+interface WeekSchedule {
+  date: string;
+  dayName: string;
+  schedules: FullSchedule[];
+}
+
 const PublicSchedules: React.FC = () => {
+  const theme = useTheme();
   const [schedules, setSchedules] = useState<FullSchedule[]>([]);
   const [filtered, setFiltered] = useState<FullSchedule[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'week' | 'table'>('week');
+  const [currentWeekStart, setCurrentWeekStart] = useState(() => {
+    const now = new Date();
+    const day = now.getDay();
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+    return new Date(now.setDate(diff));
+  });
+  
+  // Filter states
   const [department, setDepartment] = useState<string>('');
   const [professor, setProfessor] = useState<string>('');
   const [course, setCourse] = useState<string>('');
@@ -70,8 +92,90 @@ const PublicSchedules: React.FC = () => {
   const [pendingCourse, setPendingCourse] = useState<string>('');
   const [pendingRoom, setPendingRoom] = useState<string>('');
   const [pendingYear, setPendingYear] = useState<string>('');
+  
   const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
+
+  // Helper function to get week start (Monday)
+  const getWeekStart = (date: Date): Date => {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    return new Date(d.setDate(diff));
+  };
+
+  // Helper function to get week end (Sunday)
+  const getWeekEnd = (date: Date): Date => {
+    const weekStart = getWeekStart(date);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    return weekEnd;
+  };
+
+  // Helper function to format date
+  const formatDate = (dateString: string): string => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  // Helper function to get day name
+  const getDayName = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { weekday: 'short' });
+  };
+
+  // Helper function to organize schedules by week
+  const organizeSchedulesByWeek = (schedules: FullSchedule[]): WeekSchedule[] => {
+    const weekStart = getWeekStart(currentWeekStart);
+    const weekEnd = getWeekEnd(currentWeekStart);
+    
+    const weekSchedules: WeekSchedule[] = [];
+    
+    for (let i = 0; i < 7; i++) {
+      const currentDate = new Date(weekStart);
+      currentDate.setDate(weekStart.getDate() + i);
+      
+      const dateString = currentDate.toISOString().split('T')[0];
+      const daySchedules = schedules.filter(s => s.date === dateString);
+      
+      weekSchedules.push({
+        date: dateString,
+        dayName: getDayName(dateString),
+        schedules: daySchedules
+      });
+    }
+    
+    return weekSchedules;
+  };
+
+  // Week navigation handlers
+  const goToPreviousWeek = () => {
+    setCurrentWeekStart(prev => {
+      const newDate = new Date(prev);
+      newDate.setDate(prev.getDate() - 7);
+      return newDate;
+    });
+  };
+
+  const goToNextWeek = () => {
+    setCurrentWeekStart(prev => {
+      const newDate = new Date(prev);
+      newDate.setDate(prev.getDate() + 7);
+      return newDate;
+    });
+  };
+
+  const goToCurrentWeek = () => {
+    const now = new Date();
+    const day = now.getDay();
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+    setCurrentWeekStart(new Date(now.setDate(diff)));
+  };
+
+  // Get week schedules for current view
+  const weekSchedules = organizeSchedulesByWeek(filtered);
 
   useEffect(() => {
     fetchSchedules();
@@ -84,7 +188,7 @@ const PublicSchedules: React.FC = () => {
   const fetchSchedules = async () => {
     setLoading(true);
     try {
-      const url = year ? `/api/schedule/dashboard-full?year=${year}` : '/api/schedule/dashboard-full';
+      const url = year ? `/schedule/dashboard-full?year=${year}` : '/schedule/dashboard-full';
       const res = await api.get(url);
       setSchedules(res.data);
       setFiltered(res.data);
@@ -94,9 +198,13 @@ const PublicSchedules: React.FC = () => {
       setCourseOptions(Array.from(new Set(res.data.map((s: FullSchedule) => s.courseName).filter(Boolean))));
       setRoomOptions(Array.from(new Set(res.data.map((s: FullSchedule) => s.roomName).filter(Boolean))));
       // Build years
-      const uniqueYears = Array.from(new Set(res.data.map((s: FullSchedule) => s.year))) as number[];
-      uniqueYears.sort((a, b) => b - a);
-      setYears(uniqueYears);
+      const uniqueYears = Array.from(new Set(res.data.map((s: FullSchedule) => s.year))).sort((a, b) => (b as number) - (a as number));
+      setYears(uniqueYears as number[]);
+      setPendingProfessor('');
+      setPendingCourse('');
+      setPendingRoom('');
+      setPendingYear('');
+      setPendingStudyProgram('');
     } catch (err) {
       setSchedules([]);
       setFiltered([]);
@@ -131,9 +239,11 @@ const PublicSchedules: React.FC = () => {
           </Button>
         </Box>
       )}
-      <Box maxWidth="lg" sx={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'flex-start', alignItems: 'flex-start', minHeight: '100vh', pl: 0, ml: 10, width: 900 }}>
+      <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'flex-start', alignItems: 'flex-start', minHeight: '100vh', pl: 4, pr: 4, width: '100%', maxWidth: '100%' }}>
         <Box width="100%">
           <Typography variant="h4" mb={3} fontWeight="bold">Public Schedules</Typography>
+          
+          {/* Filters */}
           <Box display="flex" alignItems="center" gap={2} mb={2} flexWrap="nowrap" sx={{ overflowX: 'auto' }}>
             <Autocomplete
               options={studyProgramOptions.map(sp => sp.spName)}
@@ -200,44 +310,86 @@ const PublicSchedules: React.FC = () => {
               <CircularProgress />
             </Box>
           ) : (
+            <>
+            {/* Week Navigation */}
+            <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
+              <IconButton onClick={goToPreviousWeek}>
+                <ChevronLeft />
+              </IconButton>
+              <Typography variant="h6">
+                {getWeekStart(currentWeekStart).toLocaleDateString()} - {getWeekEnd(currentWeekStart).toLocaleDateString()}
+              </Typography>
+              <Box display="flex" gap={1}>
+                <Button variant="outlined" size="small" onClick={goToCurrentWeek}>
+                  Today
+                </Button>
+                <IconButton onClick={goToNextWeek}>
+                  <ChevronRight />
+                </IconButton>
+              </Box>
+            </Box>
+            {/* Timetable Table View (filtered by week) */}
             <TableContainer component={Paper}>
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell>Date</TableCell>
-                    <TableCell>Start</TableCell>
-                    <TableCell>End</TableCell>
-                    <TableCell>Department</TableCell>
-                    <TableCell>Study Program</TableCell>
-                    <TableCell>Course</TableCell>
-                    <TableCell>Professor</TableCell>
-                    <TableCell>Room</TableCell>
+                    <TableCell></TableCell>
+                    {[...Array(7)].map((_, i) => {
+                      const weekStart = getWeekStart(currentWeekStart);
+                      const date = new Date(weekStart);
+                      date.setDate(weekStart.getDate() + i);
+                      return (
+                        <TableCell align="center" key={i} sx={{ fontWeight: 'bold' }}>
+                          {getDayName(date.toISOString().split('T')[0])}
+                        </TableCell>
+                      );
+                    })}
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {filtered.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={8} align="center">
-                        <Typography variant="body2" color="textSecondary">No schedules found</Typography>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filtered.map(s => (
-                      <TableRow key={s.sId}>
-                        <TableCell>{s.date}</TableCell>
-                        <TableCell>{s.startTime}</TableCell>
-                        <TableCell>{s.endTime}</TableCell>
-                        <TableCell>{s.departmentName}</TableCell>
-                        <TableCell>{s.studyProgramName}</TableCell>
-                        <TableCell>{s.courseName}</TableCell>
-                        <TableCell>{`${s.professorFirstName || ''} ${s.professorLastName || ''}`.trim()}</TableCell>
-                        <TableCell>{s.roomName}</TableCell>
+                  {/* Build all unique time slots for the week */}
+                  {(() => {
+                    // Get all schedules for the current week
+                    const weekStart = getWeekStart(currentWeekStart);
+                    const weekEnd = getWeekEnd(currentWeekStart);
+                    const weekDates = [...Array(7)].map((_, i) => {
+                      const d = new Date(weekStart);
+                      d.setDate(weekStart.getDate() + i);
+                      return d.toISOString().split('T')[0];
+                    });
+                    const weekSchedulesFlat = filtered.filter(s => weekDates.includes(s.date));
+                    const allSlots = Array.from(new Set(weekSchedulesFlat.map(s => `${s.startTime}-${s.endTime}`)));
+                    allSlots.sort();
+                    return allSlots.map(slot => (
+                      <TableRow key={slot}>
+                        <TableCell sx={{ fontWeight: 'bold', width: 120 }}>{slot}</TableCell>
+                        {weekDates.map((dateString, dayIdx) => {
+                          const cellSchedules = weekSchedulesFlat.filter(s => s.date === dateString && `${s.startTime}-${s.endTime}` === slot);
+                          return (
+                            <TableCell key={dayIdx} align="center" sx={{ verticalAlign: 'top', minWidth: 140, background: theme.palette.background.default }}>
+                              {cellSchedules.length === 0 ? null : cellSchedules.map(s => (
+                                <Box key={s.sId} sx={{ mb: 1, p: 1, borderRadius: 1, background: theme.palette.mode === 'dark' ? theme.palette.background.paper : '#23272f', border: `1px solid ${theme.palette.divider}`, display: 'inline-block', minWidth: 120 }}>
+                                  <Typography variant="body2" fontWeight="bold">{s.courseName}</Typography>
+                                  <Typography variant="caption" display="block">{s.roomName}</Typography>
+                                  <Typography variant="caption" display="block">{s.professorFirstName} {s.professorLastName}</Typography>
+                                  {s.studyProgramName && (
+                                    <Typography variant="caption" display="block">{s.studyProgramName}</Typography>
+                                  )}
+                                  {s.departmentName && (
+                                    <Typography variant="caption" display="block">{s.departmentName}</Typography>
+                                  )}
+                                </Box>
+                              ))}
+                            </TableCell>
+                          );
+                        })}
                       </TableRow>
-                    ))
-                  )}
+                    ));
+                  })()}
                 </TableBody>
               </Table>
             </TableContainer>
+            </>
           )}
         </Box>
       </Box>

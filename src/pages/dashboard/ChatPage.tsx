@@ -77,8 +77,8 @@ const ChatPage: React.FC = () => {
         // Fetch conversations for each professor to find the most recent messages
         for (const prof of professors) {
           try {
-            const res = await chatService.fetchProfessorConversation(prof.id);
-            if (Array.isArray(res.data) && res.data.length > 0) {
+          const res = await chatService.fetchProfessorConversation(prof.id);
+          if (Array.isArray(res.data) && res.data.length > 0) {
               // Find the most recent message for this professor
               const mostRecentMsg = res.data.reduce((latest: ChatMessage, current: ChatMessage) => 
                 new Date(current.timestamp) > new Date(latest.timestamp) ? current : latest

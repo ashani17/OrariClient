@@ -65,7 +65,8 @@ const PublicSchedules: React.FC = () => {
   const theme = useTheme();
   const [schedules, setSchedules] = useState<FullSchedule[]>([]);
   const [filtered, setFiltered] = useState<FullSchedule[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [searchPerformed, setSearchPerformed] = useState(false);
   const [viewMode, setViewMode] = useState<'week' | 'table'>('week');
   const [currentWeekStart, setCurrentWeekStart] = useState(() => {
     const now = new Date();
@@ -178,21 +179,38 @@ const PublicSchedules: React.FC = () => {
   const weekSchedules = organizeSchedulesByWeek(filtered);
 
   useEffect(() => {
-    fetchSchedules();
-    // Fetch study programs
+    // Fetch study programs for filter options only
     adminService.getAllStudyPrograms().then((programs: StudyProgram[]) => {
       setStudyProgramOptions(programs);
     });
-  }, [year]);
+    adminService.getAllProfessors().then((profs: any[]) => {
+      setProfessorOptions(profs.map((p) => `${p.firstName || p.name || ''} ${p.lastName || p.surname || ''}`.trim()));
+    });
+    adminService.getAllCourses().then((courses: any[]) => {
+      setCourseOptions(courses.map((c) => c.cName || c.CName || c.name || ''));
+    });
+    adminService.getAllRooms().then((rooms: any[]) => {
+      setRoomOptions(rooms.map((r) => r.rName || r.name || ''));
+    });
+    adminService.getAllDepartments && adminService.getAllDepartments().then((depts: any[]) => {
+      setDepartmentOptions(depts.map((d) => d.dName || d.name || ''));
+    });
+  }, []);
 
   const fetchSchedules = async () => {
     setLoading(true);
     try {
-      const url = year ? `/schedule/dashboard-full?year=${year}` : '/schedule/dashboard-full';
+      let url = '/schedule/dashboard-full';
+      const params = new URLSearchParams();
+      if (pendingYear) {
+        params.append('year', pendingYear);
+      }
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
       const res = await api.get(url);
       setSchedules(res.data);
       setFiltered(res.data);
-      // Build options
       setDepartmentOptions(Array.from(new Set(res.data.map((s: FullSchedule) => s.departmentName).filter(Boolean))));
       setProfessorOptions(Array.from(new Set(res.data.map((s: FullSchedule) => `${s.professorFirstName || ''} ${s.professorLastName || ''}`.trim()).filter(Boolean))));
       setCourseOptions(Array.from(new Set(res.data.map((s: FullSchedule) => s.courseName).filter(Boolean))));
@@ -200,11 +218,6 @@ const PublicSchedules: React.FC = () => {
       // Build years
       const uniqueYears = Array.from(new Set(res.data.map((s: FullSchedule) => s.year))).sort((a, b) => (b as number) - (a as number));
       setYears(uniqueYears as number[]);
-      setPendingProfessor('');
-      setPendingCourse('');
-      setPendingRoom('');
-      setPendingYear('');
-      setPendingStudyProgram('');
     } catch (err) {
       setSchedules([]);
       setFiltered([]);
@@ -213,7 +226,10 @@ const PublicSchedules: React.FC = () => {
     }
   };
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
+    setSearchPerformed(true);
+    await fetchSchedules();
+    // Filtering will be applied after fetch
     let result = schedules;
     if (pendingStudyProgram) {
       result = result.filter(s => s.studyProgramName?.toLowerCase().includes(pendingStudyProgram.toLowerCase()));
@@ -360,6 +376,17 @@ const PublicSchedules: React.FC = () => {
                     const weekSchedulesFlat = filtered.filter(s => weekDates.includes(s.date));
                     const allSlots = Array.from(new Set(weekSchedulesFlat.map(s => `${s.startTime}-${s.endTime}`)));
                     allSlots.sort();
+                    if (allSlots.length === 0) {
+                      // Show at least one empty row if no slots
+                      return [
+                        <TableRow key="empty-row">
+                          <TableCell sx={{ fontWeight: 'bold', width: 120 }}></TableCell>
+                          {weekDates.map((_, dayIdx) => (
+                            <TableCell key={dayIdx} align="center" sx={{ verticalAlign: 'top', minWidth: 140, background: theme.palette.background.default }} />
+                          ))}
+                        </TableRow>
+                      ];
+                    }
                     return allSlots.map(slot => (
                       <TableRow key={slot}>
                         <TableCell sx={{ fontWeight: 'bold', width: 120 }}>{slot}</TableCell>

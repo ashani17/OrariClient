@@ -72,8 +72,12 @@ class AuthService {
     return !!localStorage.getItem('token');
   }
 
-  async updateProfile(data: { name: string; surname: string; email: string }): Promise<User> {
-    const response = await api.put<User>('/auth/update-profile', data);
+  async updateProfile(data: { name: string; surname: string; email: string; phone?: string }): Promise<User> {
+    const response = await api.put<User>('/auth/update-profile', {
+      firstName: data.name,
+      lastName: data.surname,
+      phone: data.phone
+    });
     if (response.data) {
       localStorage.setItem('user', JSON.stringify(response.data));
     }

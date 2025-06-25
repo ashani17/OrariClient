@@ -307,6 +307,9 @@ export default function UsersManagement() {
           {editingUser ? 'Edit User' : 'Create New User'}
         </DialogTitle>
         <DialogContent>
+          <Alert severity="info" sx={{ mb: 2 }}>
+            Only emails from <strong>fshn.edu.al</strong> and <strong>fshnstudent.info</strong> domains are allowed.
+          </Alert>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
             <TextField
               label="First Name"

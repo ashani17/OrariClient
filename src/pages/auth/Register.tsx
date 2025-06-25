@@ -197,6 +197,9 @@ export const Register = () => {
             <Typography component="h1" variant="h5">
               Register
             </Typography>
+            <Alert severity="info" sx={{ mb: 2, width: '100%' }}>
+              Only emails from <strong>fshn.edu.al</strong> and <strong>fshnstudent.info</strong> domains are allowed.
+            </Alert>
             <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3, width: '100%' }}>
               {error && (
                 <Alert severity="error" sx={{ mb: 2 }}>

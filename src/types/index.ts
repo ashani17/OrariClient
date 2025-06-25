@@ -6,6 +6,8 @@ export interface User {
     name: string;
     surname: string;
     role: string;
+    emailConfirmed: boolean;
+    phone?: string;
 }
 
 export interface AuthResponse {

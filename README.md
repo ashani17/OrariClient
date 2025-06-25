@@ -1,76 +1,62 @@
-# 🎓 OrariClient – University Scheduling Frontend
-
+🎓 OrariClient – University Scheduling Frontend
 A modern web-based frontend for the Orari Academic and Exam Scheduling System, enabling administrators, professors, and students to interact with academic schedules, syllabuses, and teaching allocations through a clean and responsive UI.
 
----
+🌐 Live Preview
+(Optional) Deploy via GitHub Pages, Vercel, or Netlify and insert the link here.
 
-## 🌐 Live Preview
+🚀 Features
+📅 View and manage academic timetables and exam schedules
 
-*(Optional)* Deploy via GitHub Pages, Vercel, or Netlify and insert the link here.
+📚 Access syllabuses and course information
 
----
+👩‍🏫 Assign professors to courses and view teaching loads
 
-## 🚀 Features
+🔐 Secure login via JWT and role-based dashboards
 
-- 📅 View and manage academic timetables and exam schedules  
-- 📚 Access syllabuses and course information  
-- 👩‍🏫 Assign professors to courses and view teaching loads  
-- 🔐 Secure login via JWT and role-based dashboards  
-- 🗂️ Filter and search by faculty, department, semester  
-- 📄 Export schedules to PDF or print-ready view  
-- 🌙 Light/dark theme support (optional)
+🗂️ Filter and search by faculty, department, semester
 
----
+📄 Export schedules to PDF or print-ready view
 
-## 🛠️ Tech Stack
+🌙 Light/dark theme support (optional)
 
-| Layer        | Technology                          |
-|--------------|--------------------------------------|
-| Frontend     | React + TypeScript                   |
-| UI Framework | Tailwind CSS / Bootstrap (choose one)|
-| State        | Redux Toolkit / React Query          |
-| Routing      | React Router v6                      |
-| Auth         | JWT (integrated with Orari API)      |
-| API Calls    | Axios with centralized request layer |
-| Forms        | Formik + Yup / React Hook Form       |
-| DevOps       | Vite / Webpack, Docker (optional)    |
+🛠️ Tech Stack
+Layer	Technology
+Frontend	React + TypeScript
+UI Framework	Tailwind CSS / Bootstrap (choose one)
+State	Redux Toolkit / React Query
+Routing	React Router v6
+Auth	JWT (integrated with Orari API)
+API Calls	Axios with centralized request layer
+Forms	Formik + Yup / React Hook Form
+DevOps	Vite / Webpack, Docker (optional)
 
----
-
-## 📁 Project Structure
-
-/src
-/api → Axios request wrappers
-/components → Reusable UI components
-/features
-/schedules → Timetable views, filters
-/courses → Course and syllabus UIs
-/auth → Login, protected routes
-/redux → Slices, store configuration
-/routes → Route definitions
-/utils → Date formatting, helpers
-/styles → Global styles (Tailwind / CSS)
-App.tsx → Main app entry
-main.tsx → App bootstrap
-
-yaml
+📁 Project Structure
+bash
 Copy
 Edit
+/src
+  /api                → Axios request wrappers
+  /components         → Reusable UI components
+  /features
+    /schedules        → Timetable views, filters
+    /courses          → Course and syllabus UIs
+    /auth             → Login, protected routes
+  /redux              → Slices, store configuration
+  /routes             → Route definitions
+  /utils              → Date formatting, helpers
+  /styles             → Global styles (Tailwind / CSS)
+  App.tsx             → Main app entry
+  main.tsx            → App bootstrap
+⚙️ Getting Started
+Prerequisites
+Node.js v18+
 
----
+Yarn or npm
 
-## ⚙️ Getting Started
-
-### Prerequisites
-
-- Node.js v18+
-- Yarn or npm
-
----
-
-### Setup
-
-```bash
+Setup
+bash
+Copy
+Edit
 git clone https://github.com/ashani17/OrariClient.git
 cd OrariClient
 npm install
@@ -87,7 +73,7 @@ bash
 Copy
 Edit
 npm run dev
-App will be available at: http://localhost:5173
+App will be available at http://localhost:5173
 
 🐳 Docker (Optional)
 bash
@@ -110,7 +96,7 @@ Edit
 npm run test
 Use Jest + React Testing Library for component testing
 
-Use Cypress for end-to-end testing
+Cypress for end-to-end testing
 
 🔐 Authentication
 Login using university-issued credentials

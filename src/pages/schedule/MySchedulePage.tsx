@@ -181,7 +181,7 @@ const MySchedulePage: React.FC = () => {
             <TableBody>
               {TIME_SLOTS.map(slot => (
                 <TableRow key={slot}>
-                  <TableCell align="center" sx={{ borderRight: '1px solid #e0e0e0' }}>{slot}-
+                  <TableCell align="center" sx={{ borderRight: '1px solid #e0e0e0', fontWeight: 'bold' }}>{slot}-
                     {`${String(Number(slot.split(':')[0]) + 1).padStart(2, '0')}:00`}
                   </TableCell>
                   {DAYS.map((day, dayIdx) => {
@@ -193,13 +193,22 @@ const MySchedulePage: React.FC = () => {
                         sx={{
                           height: 70,
                           borderRight: dayIdx < DAYS.length - 1 ? '1px solid #e0e0e0' : undefined,
+                          background: theme => theme.palette.background.default
                         }}
                       >
                         {sch ? (
-                          <Box>
-                            <Typography variant="subtitle2">{sch.course?.cName || sch.cId}</Typography>
-                            <Typography variant="body2" color="textSecondary">{sch.room?.rName || sch.rId}</Typography>
-                            <Typography variant="caption">{sch.startTime} - {sch.endTime}</Typography>
+                          <Box sx={{
+                            mb: 1,
+                            p: 1,
+                            borderRadius: 1,
+                            background: theme => theme.palette.mode === 'dark' ? theme.palette.background.paper : '#23272f',
+                            border: theme => `1px solid ${theme.palette.divider}`,
+                            display: 'inline-block',
+                            minWidth: 120
+                          }}>
+                            <Typography variant="body2" fontWeight="bold">{sch.course?.cName || sch.cId}</Typography>
+                            <Typography variant="caption" display="block">{sch.room?.rName || sch.rId}</Typography>
+                            <Typography variant="caption" display="block">{sch.startTime} - {sch.endTime}</Typography>
                           </Box>
                         ) : null}
                       </TableCell>

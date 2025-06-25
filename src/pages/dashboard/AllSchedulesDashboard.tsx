@@ -17,8 +17,14 @@ import {
   InputLabel,
   CircularProgress,
   Chip,
-  Button
+  Button,
+  Card,
+  CardContent,
+  Grid,
+  IconButton,
+  useTheme
 } from '@mui/material';
+import { ChevronLeft, ChevronRight } from '@mui/icons-material';
 import api from '../../services/api';
 import { adminService } from '../../services/adminService';
 import type { StudyProgram } from '../../types';
@@ -47,7 +53,14 @@ interface FullSchedule {
   year: number;
 }
 
+interface WeekSchedule {
+  date: string;
+  dayName: string;
+  schedules: FullSchedule[];
+}
+
 const AllSchedulesDashboard: React.FC = () => {
+  const theme = useTheme();
   const [schedules, setSchedules] = useState<FullSchedule[]>([]);
   const [filtered, setFiltered] = useState<FullSchedule[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,6 +78,12 @@ const AllSchedulesDashboard: React.FC = () => {
   const [pendingYear, setPendingYear] = useState<string>('');
   const [studyProgramOptions, setStudyProgramOptions] = useState<StudyProgram[]>([]);
   const [pendingStudyProgram, setPendingStudyProgram] = useState<string>('');
+  const [currentWeekStart, setCurrentWeekStart] = useState(() => {
+    const now = new Date();
+    const day = now.getDay();
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+    return new Date(now.setDate(diff));
+  });
 
   useEffect(() => {
     fetchSchedules();
@@ -89,7 +108,17 @@ const AllSchedulesDashboard: React.FC = () => {
   const fetchSchedules = async () => {
     setLoading(true);
     try {
-      const url = year ? `/api/schedule/dashboard-full?year=${year}` : '/api/schedule/dashboard-full';
+      let url = '/schedule/dashboard-full';
+      const params = new URLSearchParams();
+      
+      if (year) {
+        params.append('year', year);
+      }
+      
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+      
       const res = await api.get(url);
       setSchedules(res.data);
       setFiltered(res.data);
@@ -97,7 +126,7 @@ const AllSchedulesDashboard: React.FC = () => {
       setCourseOptions(Array.from(new Set(res.data.map((s: FullSchedule) => s.courseName).filter(Boolean))));
       setRoomOptions(Array.from(new Set(res.data.map((s: FullSchedule) => s.roomName).filter(Boolean))));
       // Build years
-      const uniqueYears = Array.from(new Set(res.data.map((s: FullSchedule) => s.year))).sort((a: number, b: number) => b - a);
+      const uniqueYears = Array.from(new Set(res.data.map((s: FullSchedule) => s.year))).sort((a, b) => (b as number) - (a as number));
       setYears(uniqueYears as number[]);
       setPendingProfessor('');
       setPendingCourse('');
@@ -129,9 +158,55 @@ const AllSchedulesDashboard: React.FC = () => {
     setFiltered(result);
   };
 
+  // Helper function to get week start (Monday)
+  const getWeekStart = (date: Date): Date => {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    return new Date(d.setDate(diff));
+  };
+
+  // Helper function to get week end (Sunday)
+  const getWeekEnd = (date: Date): Date => {
+    const weekStart = getWeekStart(date);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    return weekEnd;
+  };
+
+  // Helper function to get day name
+  const getDayName = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { weekday: 'short' });
+  };
+
+  // Week navigation handlers
+  const goToPreviousWeek = () => {
+    setCurrentWeekStart(prev => {
+      const newDate = new Date(prev);
+      newDate.setDate(prev.getDate() - 7);
+      return newDate;
+    });
+  };
+  const goToNextWeek = () => {
+    setCurrentWeekStart(prev => {
+      const newDate = new Date(prev);
+      newDate.setDate(prev.getDate() + 7);
+      return newDate;
+    });
+  };
+  const goToCurrentWeek = () => {
+    const now = new Date();
+    const day = now.getDay();
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+    setCurrentWeekStart(new Date(now.setDate(diff)));
+  };
+
   return (
     <Box p={4}>
-      <Typography variant="h4" mb={3} fontWeight="bold">Homepage</Typography>
+      <Typography variant="h4" mb={3} fontWeight="bold">Schedule Dashboard</Typography>
+      
+      {/* Filters */}
       <Box display="flex" gap={2} mb={3} flexWrap="wrap" alignItems="center">
         <Autocomplete
           options={studyProgramOptions.map(sp => sp.spName)}
@@ -176,7 +251,7 @@ const AllSchedulesDashboard: React.FC = () => {
             label="Year"
             onChange={e => setPendingYear(e.target.value)}
           >
-            <MenuItem value="">All</MenuItem>
+            <MenuItem key="all" value="">All</MenuItem>
             {years.map(y => <MenuItem key={y} value={y}>{y}</MenuItem>)}
           </Select>
         </FormControl>
@@ -184,53 +259,89 @@ const AllSchedulesDashboard: React.FC = () => {
           Search
         </Button>
       </Box>
+
       {loading ? (
         <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
           <CircularProgress />
         </Box>
       ) : (
+        <>
+        {/* Week Navigation */}
+        <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
+          <IconButton onClick={goToPreviousWeek}>
+            <ChevronLeft />
+          </IconButton>
+          <Typography variant="h6">
+            {getWeekStart(currentWeekStart).toLocaleDateString()} - {getWeekEnd(currentWeekStart).toLocaleDateString()}
+          </Typography>
+          <Box display="flex" gap={1}>
+            <Button variant="outlined" size="small" onClick={goToCurrentWeek}>
+              Today
+            </Button>
+            <IconButton onClick={goToNextWeek}>
+              <ChevronRight />
+            </IconButton>
+          </Box>
+        </Box>
+        {/* Timetable Table View (filtered by week) */}
         <TableContainer component={Paper}>
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Date</TableCell>
-                <TableCell>Start</TableCell>
-                <TableCell>End</TableCell>
-                <TableCell>Department</TableCell>
-                <TableCell>Study Program</TableCell>
-                <TableCell>Course</TableCell>
-                <TableCell>Professor</TableCell>
-                <TableCell>Room</TableCell>
+                <TableCell></TableCell>
+                {[...Array(7)].map((_, i) => {
+                  const weekStart = getWeekStart(currentWeekStart);
+                  const date = new Date(weekStart);
+                  date.setDate(weekStart.getDate() + i);
+                  return (
+                    <TableCell align="center" key={i} sx={{ fontWeight: 'bold' }}>
+                      {getDayName(date.toISOString().split('T')[0])}
+                    </TableCell>
+                  );
+                })}
               </TableRow>
             </TableHead>
             <TableBody>
-              {filtered.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} align="center">
-                    <Typography variant="body2" color="textSecondary">No schedules found</Typography>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filtered.map(s => (
-                  <TableRow key={s.sId}>
-                    <TableCell>{s.date}</TableCell>
-                    <TableCell>{s.startTime}</TableCell>
-                    <TableCell>{s.endTime}</TableCell>
-                    <TableCell>{s.departmentName}</TableCell>
-                    <TableCell>{s.studyProgramName}</TableCell>
-                    <TableCell>
-                      <Chip label={s.courseName} size="small" color="primary" />
-                    </TableCell>
-                    <TableCell>{`${s.professorFirstName || ''} ${s.professorLastName || ''}`.trim()}</TableCell>
-                    <TableCell>
-                      <Chip label={s.roomName} size="small" color="secondary" />
-                    </TableCell>
+              {/* Build all unique time slots for the week */}
+              {(() => {
+                // Get all schedules for the current week
+                const weekStart = getWeekStart(currentWeekStart);
+                const weekEnd = getWeekEnd(currentWeekStart);
+                const weekDates = [...Array(7)].map((_, i) => {
+                  const d = new Date(weekStart);
+                  d.setDate(weekStart.getDate() + i);
+                  return d.toISOString().split('T')[0];
+                });
+                const weekSchedulesFlat = filtered.filter(s => weekDates.includes(s.date));
+                const allSlots = Array.from(new Set(weekSchedulesFlat.map(s => `${s.startTime}-${s.endTime}`)));
+                allSlots.sort();
+                return allSlots.map(slot => (
+                  <TableRow key={slot}>
+                    <TableCell sx={{ fontWeight: 'bold', width: 120 }}>{slot}</TableCell>
+                    {weekDates.map((dateString, dayIdx) => {
+                      const cellSchedules = weekSchedulesFlat.filter(s => s.date === dateString && `${s.startTime}-${s.endTime}` === slot);
+                      return (
+                        <TableCell key={dayIdx} align="center" sx={{ verticalAlign: 'top', minWidth: 140, background: theme.palette.background.default }}>
+                          {cellSchedules.length === 0 ? null : cellSchedules.map(s => (
+                            <Box key={s.sId} sx={{ mb: 1, p: 1, borderRadius: 1, background: theme.palette.mode === 'dark' ? theme.palette.background.paper : '#23272f', border: `1px solid ${theme.palette.divider}`, display: 'inline-block', minWidth: 120 }}>
+                              <Typography variant="body2" fontWeight="bold">{s.courseName}</Typography>
+                              <Typography variant="caption" display="block">{s.roomName}</Typography>
+                              <Typography variant="caption" display="block">{s.professorFirstName} {s.professorLastName}</Typography>
+                              {s.studyProgramName && (
+                                <Typography variant="caption" display="block">{s.studyProgramName}</Typography>
+                              )}
+                            </Box>
+                          ))}
+                        </TableCell>
+                      );
+                    })}
                   </TableRow>
-                ))
-              )}
+                ));
+              })()}
             </TableBody>
           </Table>
         </TableContainer>
+        </>
       )}
     </Box>
   );

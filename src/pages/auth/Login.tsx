@@ -31,7 +31,7 @@ function PublicSchedulesBackgroundTable() {
   useEffect(() => {
     const fetchSchedules = async () => {
       try {
-        const res = await api.get('/api/schedule/dashboard-full');
+        const res = await api.get('/schedule/dashboard-full');
         setSchedules(res.data);
       } catch {
         setSchedules([]);

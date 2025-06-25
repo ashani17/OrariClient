@@ -67,16 +67,30 @@ A modern web-based frontend for the **Orari Academic and Exam Scheduling System*
 
 ### 🛠️ Setup
 
-```bash
+
 git clone https://github.com/ashani17/OrariClient.git
 cd OrariClient
 npm install
 
+---
 ## 🔧 Configure
+
+Before running the app, configure your environment variables and any required settings.
+
+- Create a `.env` file in the project root (see example below).
+- Adjust `VITE_API_BASE_URL` to match your backend API endpoint.
+- Update other settings as needed for your environment.
+
+Example `.env`:
+
+
+VITE_API_BASE_URL=https://localhost:5001/api
+VITE_JWT_STORAGE_KEY=orari_token
+
 
 Create a `.env` file in the root directory with the following content:
 
-```env
+
 VITE_API_BASE_URL=https://localhost:5001/api
 VITE_JWT_STORAGE_KEY=orari_token
 
@@ -87,6 +101,8 @@ Edit
 npm run dev
 Then open your browser at:
 👉 http://localhost:5173
+
+---
 
 ## 🐳 Docker (Optional)
 bash
@@ -110,6 +126,9 @@ bash
 Copy
 Edit
 npm run test
+
+---
+
 ## 🧪 Jest + React Testing Library for unit/component testing
 
 ## 🧪 Cypress for end-to-end testing
@@ -121,12 +140,13 @@ npm run test
 
 ## 🔒 Route protection for admin, professor, and student roles
 
-##📄 PDF / Print Export
-##🖨️ Schedule views are exportable to PDF
+## 📄 PDF / Print Export
 
-##🧾 Optimized for A4 print layout
+## 🖨️ Schedule views are exportable to PDF
 
-##📘 License
+## 🧾 Optimized for A4 print layout
+
+## 📘 License
 MIT License – see the LICENSE file.
 
 ## 👨‍🎓 Author

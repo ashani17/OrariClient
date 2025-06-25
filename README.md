@@ -1,6 +1,6 @@
 # 🎓 OrariClient – University Scheduling Frontend
 
-A modern web-based frontend for the Orari Academic and Exam Scheduling System, enabling administrators, professors, and students to interact with academic schedules, syllabuses, and teaching allocations through a clean and responsive UI.
+A modern web-based frontend for the **Orari Academic and Exam Scheduling System**, enabling administrators, professors, and students to interact with academic schedules, syllabuses, and teaching allocations through a clean and responsive UI.
 
 ---
 
@@ -12,13 +12,13 @@ A modern web-based frontend for the Orari Academic and Exam Scheduling System, e
 
 ## 🚀 Features
 
-- 📅 View and manage academic timetables and exam schedules  
-- 📚 Access syllabuses and course information  
-- 👩‍🏫 Assign professors to courses and view teaching loads  
-- 🔐 Secure login via JWT and role-based dashboards  
-- 🗂️ Filter and search by faculty, department, semester  
-- 📄 Export schedules to PDF or print-ready view  
-- 🌙 Light/dark theme support (optional)
+- 📅 **View and manage academic timetables and exam schedules**
+- 📚 **Access syllabuses and course information**
+- 👩‍🏫 **Assign professors to courses and view teaching loads**
+- 🔐 **Secure login via JWT and role-based dashboards**
+- 🗂️ **Filter and search by faculty, department, semester**
+- 📄 **Export schedules to PDF or print-ready view**
+- 🌙 **Light/dark theme support (optional)**
 
 ---
 
@@ -26,70 +26,85 @@ A modern web-based frontend for the Orari Academic and Exam Scheduling System, e
 
 | Layer        | Technology                          |
 |--------------|--------------------------------------|
-| Frontend     | React + TypeScript                   |
-| UI Framework | Tailwind CSS / Bootstrap (choose one)|
-| State        | Redux Toolkit / React Query          |
-| Routing      | React Router v6                      |
-| Auth         | JWT (integrated with Orari API)      |
-| API Calls    | Axios with centralized request layer |
-| Forms        | Formik + Yup / React Hook Form       |
-| DevOps       | Vite / Webpack, Docker (optional)    |
+| **Frontend**     | React + TypeScript                   |
+| **UI Framework** | Tailwind CSS / Bootstrap (choose one)|
+| **State**        | Redux Toolkit / React Query          |
+| **Routing**      | React Router v6                      |
+| **Auth**         | JWT (integrated with Orari API)      |
+| **API Calls**    | Axios with centralized request layer |
+| **Forms**        | Formik + Yup / React Hook Form       |
+| **DevOps**       | Vite / Webpack, Docker (optional)    |
 
 ---
 
 ## 📁 Project Structure
 
-/src
-/api → Axios request wrappers
-/components → Reusable UI components
-/features
-/schedules → Timetable views, filters
-/courses → Course and syllabus UIs
-/auth → Login, protected routes
-/redux → Slices, store configuration
-/routes → Route definitions
-/utils → Date formatting, helpers
-/styles → Global styles (Tailwind / CSS)
-App.tsx → Main app entry
-main.tsx → App bootstrap
+### /src
 
-yaml
-Copy
-Edit
+- `/api` → **Axios request wrappers**  
+- `/components` → **Reusable UI components**  
+- `/features`
+  - `/schedules` → **Timetable views, filters**
+  - `/courses` → **Course and syllabus UIs**
+  - `/auth` → **Login, protected routes**
+- `/redux` → **Slices, store configuration**
+- `/routes` → **Route definitions**
+- `/utils` → **Date formatting, helpers**
+- `/styles` → **Global styles (Tailwind / CSS)**
+- `App.tsx` → **Main app entry**
+- `main.tsx` → **App bootstrap**
 
 ---
 
 ## ⚙️ Getting Started
 
-### Prerequisites
+### ✅ Prerequisites
 
 - Node.js v18+
 - Yarn or npm
 
 ---
 
-### Setup
+### 🛠️ Setup
 
-```bash
+
 git clone https://github.com/ashani17/OrariClient.git
 cd OrariClient
 npm install
-Configure
-Create a .env file:
 
-env
-Copy
-Edit
+---
+## 🔧 Configure
+
+Before running the app, configure your environment variables and any required settings.
+
+- Create a `.env` file in the project root (see example below).
+- Adjust `VITE_API_BASE_URL` to match your backend API endpoint.
+- Update other settings as needed for your environment.
+
+Example `.env`:
+
+
 VITE_API_BASE_URL=https://localhost:5001/api
 VITE_JWT_STORAGE_KEY=orari_token
-🔄 Run Locally
+
+
+Create a `.env` file in the root directory with the following content:
+
+
+VITE_API_BASE_URL=https://localhost:5001/api
+VITE_JWT_STORAGE_KEY=orari_token
+
+## 🔄 Run Locally
 bash
 Copy
 Edit
 npm run dev
-App will be available at: http://localhost:5173
+Then open your browser at:
+👉 http://localhost:5173
 
-🐳 Docker (Optional)
+---
+
+## 🐳 Docker (Optional)
 bash
 Copy
 Edit
@@ -101,31 +116,38 @@ Copy
 Edit
 npm run lint
 npm run format
-🧪 Testing (optional)
+
+---
+
+## 🧪 Testing (Optional)
 If testing is enabled:
 
 bash
 Copy
 Edit
 npm run test
-Use Jest + React Testing Library for component testing
 
-Use Cypress for end-to-end testing
+---
 
-🔐 Authentication
-Login using university-issued credentials
+## 🧪 Jest + React Testing Library for unit/component testing
 
-JWT token stored in secure storage
+## 🧪 Cypress for end-to-end testing
 
-Route protection for admin/professor/student views
+## 🔐 Authentication
+## 🔑 Login using university-issued credentials
 
-📄 PDF/Print Export
-Schedule view is exportable to PDF via print-friendly routes
+## 🔑 JWT token stored in secure browser storage
 
-Responsive layout for A4 paper
+## 🔒 Route protection for admin, professor, and student roles
 
-📘 License
-MIT License – see LICENSE
+## 📄 PDF / Print Export
 
-👨‍🎓 Author
-Developed by @ashani17 — as the frontend client for the Orari University Academic Scheduling System.
+## 🖨️ Schedule views are exportable to PDF
+
+## 🧾 Optimized for A4 print layout
+
+## 📘 License
+MIT License – see the LICENSE file.
+
+## 👨‍🎓 Author
+Developed by @ashani17 — as the official frontend client for the Orari University Academic Scheduling System.

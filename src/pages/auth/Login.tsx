@@ -120,6 +120,8 @@ export const Login = () => {
     email: '',
     password: '',
   });
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendMessage, setResendMessage] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -136,6 +138,32 @@ export const Login = () => {
       [name]: value,
     }));
     if (error) clearError();
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!credentials.email) {
+      setResendMessage('Please enter your email address first.');
+      return;
+    }
+
+    setResendLoading(true);
+    setResendMessage('');
+
+    try {
+      const response = await api.post('/authentication/resend-confirmation', {
+        email: credentials.email
+      });
+
+      if (response.data.success) {
+        setResendMessage('Confirmation email sent successfully! Please check your inbox.');
+      } else {
+        setResendMessage(response.data.message || 'Failed to send confirmation email.');
+      }
+    } catch (error: any) {
+      setResendMessage(error.response?.data?.message || 'Failed to send confirmation email. Please try again.');
+    } finally {
+      setResendLoading(false);
+    }
   };
 
   return (
@@ -168,6 +196,23 @@ export const Login = () => {
                 {error && (
                   <Alert severity="error" sx={{ mb: 2 }}>
                     {error}
+                    {error.includes('confirm your email') && (
+                      <Box mt={1}>
+                        <Button
+                          size="small"
+                          onClick={handleResendConfirmation}
+                          disabled={resendLoading}
+                          sx={{ textTransform: 'none' }}
+                        >
+                          {resendLoading ? 'Sending...' : 'Resend Confirmation Email'}
+                        </Button>
+                      </Box>
+                    )}
+                  </Alert>
+                )}
+                {resendMessage && (
+                  <Alert severity={resendMessage.includes('successfully') ? 'success' : 'info'} sx={{ mb: 2 }}>
+                    {resendMessage}
                   </Alert>
                 )}
                 <TextField

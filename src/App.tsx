@@ -6,6 +6,7 @@ import { Login } from './pages/auth/Login';
 import { Register } from './pages/auth/Register';
 import { ForgotPassword } from './pages/auth/ForgotPassword';
 import { ResetPassword } from './pages/auth/ResetPassword';
+import EmailConfirmation from './pages/auth/EmailConfirmation';
 import { theme, darkTheme } from './theme';
 import { CssBaseline } from '@mui/material';
 import { useAuthStore } from './store/authStore';
@@ -69,6 +70,10 @@ function App() {
                 <ResetPassword />
               )
             }
+          />
+          <Route
+            path="/confirm-email"
+            element={<EmailConfirmation />}
           />
           <Route
             path="/admin"

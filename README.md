@@ -1,54 +1,131 @@
-# React + TypeScript + Vite
+# 🎓 OrariClient – University Scheduling Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern web-based frontend for the Orari Academic and Exam Scheduling System, enabling administrators, professors, and students to interact with academic schedules, syllabuses, and teaching allocations through a clean and responsive UI.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🌐 Live Preview
 
-## Expanding the ESLint configuration
+*(Optional)* Deploy via GitHub Pages, Vercel, or Netlify and insert the link here.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+---
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+## 🚀 Features
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+- 📅 View and manage academic timetables and exam schedules  
+- 📚 Access syllabuses and course information  
+- 👩‍🏫 Assign professors to courses and view teaching loads  
+- 🔐 Secure login via JWT and role-based dashboards  
+- 🗂️ Filter and search by faculty, department, semester  
+- 📄 Export schedules to PDF or print-ready view  
+- 🌙 Light/dark theme support (optional)
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+---
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
+## 🛠️ Tech Stack
+
+| Layer        | Technology                          |
+|--------------|--------------------------------------|
+| Frontend     | React + TypeScript                   |
+| UI Framework | Tailwind CSS / Bootstrap (choose one)|
+| State        | Redux Toolkit / React Query          |
+| Routing      | React Router v6                      |
+| Auth         | JWT (integrated with Orari API)      |
+| API Calls    | Axios with centralized request layer |
+| Forms        | Formik + Yup / React Hook Form       |
+| DevOps       | Vite / Webpack, Docker (optional)    |
+
+---
+
+## 📁 Project Structure
+
+/src
+/api → Axios request wrappers
+/components → Reusable UI components
+/features
+/schedules → Timetable views, filters
+/courses → Course and syllabus UIs
+/auth → Login, protected routes
+/redux → Slices, store configuration
+/routes → Route definitions
+/utils → Date formatting, helpers
+/styles → Global styles (Tailwind / CSS)
+App.tsx → Main app entry
+main.tsx → App bootstrap
+
+yaml
+Copy
+Edit
+
+---
+
+## ⚙️ Getting Started
+
+### Prerequisites
+
+- Node.js v18+
+- Yarn or npm
+
+---
+
+### Setup
+
+```bash
+git clone https://github.com/ashani17/OrariClient.git
+cd OrariClient
+npm install
+Configure
+Create a .env file:
+
+env
+Copy
+Edit
+VITE_API_BASE_URL=https://localhost:5001/api
+VITE_JWT_STORAGE_KEY=orari_token
+🔄 Run Locally
+bash
+Copy
+Edit
+npm run dev
+App will be available at: http://localhost:5173
+
+🐳 Docker (Optional)
+bash
+Copy
+Edit
+docker build -t orari-client .
+docker run -p 5173:80 orari-client
+✅ Linting & Formatting
+bash
+Copy
+Edit
+npm run lint
+npm run format
+🧪 Testing (optional)
+If testing is enabled:
+
+bash
+Copy
+Edit
+npm run test
+Use Jest + React Testing Library for component testing
+
+Use Cypress for end-to-end testing
+
+🔐 Authentication
+Login using university-issued credentials
+
+JWT token stored in secure storage
+
+Route protection for admin/professor/student views
+
+📄 PDF/Print Export
+Schedule view is exportable to PDF via print-friendly routes
+
+Responsive layout for A4 paper
+
+📘 License
+MIT License – see LICENSE
+
+👨‍🎓 Author
+Developed by @ashani17 — as the frontend client for the Orari University Academic Scheduling System.

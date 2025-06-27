@@ -407,7 +407,7 @@ const PublicSchedules: React.FC = () => {
                                   )}
                                 </Box>
                               ))}
-                            </TableCell>
+                      </TableCell>
                           );
                         })}
                       </TableRow>

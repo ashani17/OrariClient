@@ -26,12 +26,16 @@ import {
 import { scheduleService } from '../../services/scheduleService';
 import { useApiRequest } from '../../hooks/useApiRequest';
 import type { Schedule } from '../../types/schedule';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import { useTheme } from '@mui/material/styles';
 
 export const SchedulesPage = () => {
   const navigate = useNavigate();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [error, setError] = useState<string | null>(null);
+  const theme = useTheme();
 
   const {
     data: schedules = [],
@@ -92,6 +96,47 @@ export const SchedulesPage = () => {
     return days[day];
   };
 
+  const handleDownloadPDF = () => {
+    const doc = new jsPDF();
+    const isDark = theme.palette.mode === 'dark';
+    const tableColumn = [
+      'Date',
+      'Day',
+      'Time',
+      'Room',
+      'Course',
+      'Professor',
+    ];
+    const tableRows = schedules.map((schedule) => [
+      new Date(schedule.date).toLocaleDateString(),
+      getDayOfWeek(new Date(schedule.date).getDay()),
+      `${formatTime(schedule.startTime)} - ${formatTime(schedule.endTime)}`,
+      schedule.roomName || schedule.roomId || '',
+      schedule.courseName || schedule.courseId || '',
+      schedule.professorName || schedule.professorId || '',
+    ]);
+    doc.autoTable({
+      head: [tableColumn],
+      body: tableRows,
+      styles: {
+        textColor: isDark ? '#fff' : '#222',
+        lineColor: isDark ? '#888' : '#222',
+        fillColor: isDark ? '#23272f' : '#fff',
+      },
+      headStyles: {
+        fillColor: isDark ? '#23272f' : '#f5f5f5',
+        textColor: isDark ? '#fff' : '#222',
+        lineColor: isDark ? '#888' : '#222',
+      },
+      alternateRowStyles: {
+        fillColor: isDark ? '#2c313a' : '#fafafa',
+      },
+      tableLineColor: isDark ? '#888' : '#222',
+      tableLineWidth: 0.1,
+    });
+    doc.save('schedules.pdf');
+  };
+
   // Fetch schedules on component mount
   useEffect(() => {
     fetchSchedules();
@@ -108,13 +153,22 @@ export const SchedulesPage = () => {
           <Typography variant="h4" component="h1">
             Schedules
           </Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => navigate('/schedule/create')}
-          >
-            Create Schedule
-          </Button>
+          <Box>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => navigate('/schedule/create')}
+              sx={{ mr: 2 }}
+            >
+              Create Schedule
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={handleDownloadPDF}
+            >
+              Download PDF
+            </Button>
+          </Box>
         </Box>
 
         {error && (

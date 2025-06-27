@@ -59,6 +59,9 @@ interface Schedule {
     credits: number;
     profesor: string;
   };
+  description?: string;
+  isExam?: boolean;
+  examName?: string;
 }
 
 interface Room {
@@ -93,13 +96,16 @@ export default function SchedulesManagement() {
   const [error, setError] = useState<string | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
-  const [formData, setFormData] = useState<CreateScheduleDTO>({
+  const [formData, setFormData] = useState<CreateScheduleDTO & { description?: string; isExam?: boolean; examName?: string }>({
     date: '',
     startTime: '',
     endTime: '',
     rId: 0,
     professorId: '',
-    cId: 0
+    cId: 0,
+    description: '',
+    isExam: false,
+    examName: '',
   });
   const [tab, setTab] = useState(0);
 
@@ -137,7 +143,10 @@ export default function SchedulesManagement() {
         endTime: schedule.endTime,
         rId: schedule.rId,
         professorId: schedule.professorId || '',
-        cId: schedule.cId
+        cId: schedule.cId,
+        description: schedule.description || '',
+        isExam: schedule.eId ? true : false,
+        examName: schedule.eId ? (schedule.examName || '') : '',
       });
     } else {
       setEditingSchedule(null);
@@ -147,7 +156,10 @@ export default function SchedulesManagement() {
         endTime: '',
         rId: 0,
         professorId: '',
-        cId: 0
+        cId: 0,
+        description: '',
+        isExam: false,
+        examName: '',
       });
     }
     setOpenDialog(true);
@@ -162,19 +174,33 @@ export default function SchedulesManagement() {
       endTime: '',
       rId: 0,
       professorId: '',
-      cId: 0
+      cId: 0,
+      description: '',
+      isExam: false,
+      examName: '',
     });
+  };
+
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: checked,
+      ...(name === 'isExam' && !checked ? { examName: '' } : {})
+    }));
   };
 
   const handleSubmit = async () => {
     try {
       setError(null);
-      // Ensure time fields are in HH:mm:ss format
       const padTime = (t: string) => t.length === 5 ? t + ':00' : t;
       const payload = {
         ...formData,
         startTime: padTime(formData.startTime),
         endTime: padTime(formData.endTime),
+        description: formData.description,
+        isExam: !!formData.isExam,
+        examName: formData.isExam ? formData.examName : '',
       };
       if (editingSchedule) {
         await adminService.updateSchedule(editingSchedule.sId, payload);
@@ -482,6 +508,37 @@ export default function SchedulesManagement() {
                     ))}
                   </Select>
                 </FormControl>
+                <TextField
+                  fullWidth
+                  label="Description"
+                  value={formData.description}
+                  onChange={e => setFormData({ ...formData, description: e.target.value })}
+                  margin="normal"
+                  multiline
+                  minRows={2}
+                />
+                <FormControl fullWidth margin="normal">
+                  <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                    <input
+                      type="checkbox"
+                      name="isExam"
+                      checked={!!formData.isExam}
+                      onChange={handleCheckboxChange}
+                      style={{ marginRight: 8 }}
+                    />
+                    <span>Is this schedule for an exam?</span>
+                  </Box>
+                </FormControl>
+                {formData.isExam && (
+                  <TextField
+                    fullWidth
+                    label="Exam Name"
+                    value={formData.examName}
+                    onChange={e => setFormData({ ...formData, examName: e.target.value })}
+                    margin="normal"
+                    required
+                  />
+                )}
               </Box>
             </DialogContent>
             <DialogActions>

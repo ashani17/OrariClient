@@ -11,6 +11,9 @@ export interface Schedule {
   dayOfWeek: number;
   semester: number;
   academicYear: string;
+  description?: string;
+  isExam?: boolean;
+  examName?: string;
 }
 
 export interface CreateScheduleDto {
@@ -22,6 +25,9 @@ export interface CreateScheduleDto {
   dayOfWeek: number;
   semester: number;
   academicYear: string;
+  description?: string;
+  isExam?: boolean;
+  examName?: string;
 }
 
 export interface UpdateScheduleDto extends Partial<CreateScheduleDto> {} 

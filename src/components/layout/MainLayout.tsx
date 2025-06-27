@@ -40,6 +40,9 @@ import { getRolesFromToken, decodeJwtToken } from '../../utils/jwtUtils';
 import FreeRoomsSidebar from '../FreeRoomsSidebar';
 import chatService from '../../services/chatService';
 import { adminService } from '../../services/adminService';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import api from '../../services/api';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -206,7 +209,23 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
         </IconButton>
       </Toolbar>
       <List>
-        {allMenuItems.map((item) => (
+        {/* Render all items except Settings first */}
+        {allMenuItems.filter(item => item.text !== 'Settings').map((item) => (
+          <ListItem
+            button
+            key={item.text}
+            onClick={() => {
+              if (item.action) item.action();
+              else navigate(item.path);
+              setSidebarOpen(false);
+            }}
+          >
+            <ListItemIcon>{item.icon}</ListItemIcon>
+            <ListItemText primary={item.text} />
+          </ListItem>
+        ))}
+        {/* Render Settings last */}
+        {allMenuItems.filter(item => item.text === 'Settings').map((item) => (
           <ListItem
             button
             key={item.text}

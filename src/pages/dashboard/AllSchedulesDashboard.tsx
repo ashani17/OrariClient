@@ -28,6 +28,8 @@ import { ChevronLeft, ChevronRight } from '@mui/icons-material';
 import api from '../../services/api';
 import { adminService } from '../../services/adminService';
 import type { StudyProgram } from '../../types';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 interface FullSchedule {
   sId: number;
@@ -196,10 +198,64 @@ const AllSchedulesDashboard: React.FC = () => {
     setCurrentWeekStart(new Date(now.setDate(diff)));
   };
 
+  const handleDownloadPDF = () => {
+    // Get all schedules for the current week
+    const weekStart = getWeekStart(currentWeekStart);
+    const weekEnd = getWeekEnd(currentWeekStart);
+    const weekDates = [...Array(7)].map((_, i) => {
+      const d = new Date(weekStart);
+      d.setDate(weekStart.getDate() + i);
+      return d.toISOString().split('T')[0];
+    });
+    const weekSchedulesFlat = filtered.filter(s => weekDates.includes(s.date));
+    // Prepare rows
+    const tableRows = weekSchedulesFlat.map(s => [
+      new Date(s.date).toLocaleDateString(),
+      getDayName(s.date),
+      `${s.startTime.substring(0,5)} - ${s.endTime.substring(0,5)}`,
+      s.roomName,
+      s.courseName,
+      `${s.professorFirstName || ''} ${s.professorLastName || ''}`.trim(),
+    ]);
+    const doc = new jsPDF();
+    const isDark = theme.palette.mode === 'dark';
+    doc.autoTable({
+      head: [[
+        'Date',
+        'Day',
+        'Time',
+        'Room',
+        'Course',
+        'Professor',
+      ]],
+      body: tableRows,
+      styles: {
+        textColor: isDark ? '#fff' : '#222',
+        lineColor: isDark ? '#888' : '#222',
+        fillColor: isDark ? '#23272f' : '#fff',
+      },
+      headStyles: {
+        fillColor: isDark ? '#23272f' : '#f5f5f5',
+        textColor: isDark ? '#fff' : '#222',
+        lineColor: isDark ? '#888' : '#222',
+      },
+      alternateRowStyles: {
+        fillColor: isDark ? '#2c313a' : '#fafafa',
+      },
+      tableLineColor: isDark ? '#888' : '#222',
+      tableLineWidth: 0.1,
+    });
+    doc.save('week-schedule.pdf');
+  };
+
   return (
     <Box p={4}>
       <Typography variant="h4" mb={3} fontWeight="bold">Schedule Dashboard</Typography>
-      
+      <Box display="flex" justifyContent="flex-end" mb={2}>
+        <Button variant="outlined" onClick={handleDownloadPDF}>
+          Download PDF
+        </Button>
+      </Box>
       {/* Filters */}
       <Box display="flex" gap={2} mb={3} flexWrap="wrap" alignItems="center">
         <Autocomplete

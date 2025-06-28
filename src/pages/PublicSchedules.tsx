@@ -52,7 +52,8 @@ interface FullSchedule {
   studyProgramName?: string;
   departmentId?: number;
   departmentName?: string;
-  year: number;
+  year: number; // 1, 2, or 3
+  academicYear: string; // e.g., "2023-2026"
 }
 
 interface WeekSchedule {
@@ -81,7 +82,9 @@ const PublicSchedules: React.FC = () => {
   const [course, setCourse] = useState<string>('');
   const [room, setRoom] = useState<string>('');
   const [year, setYear] = useState<string>('');
+  const [academicYear, setAcademicYear] = useState<string>('');
   const [years, setYears] = useState<number[]>([]);
+  const [academicYears, setAcademicYears] = useState<string[]>([]);
   const [departmentOptions, setDepartmentOptions] = useState<string[]>([]);
   const [professorOptions, setProfessorOptions] = useState<string[]>([]);
   const [courseOptions, setCourseOptions] = useState<string[]>([]);
@@ -93,6 +96,7 @@ const PublicSchedules: React.FC = () => {
   const [pendingCourse, setPendingCourse] = useState<string>('');
   const [pendingRoom, setPendingRoom] = useState<string>('');
   const [pendingYear, setPendingYear] = useState<string>('');
+  const [pendingAcademicYear, setPendingAcademicYear] = useState<string>('');
   
   const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
@@ -215,9 +219,12 @@ const PublicSchedules: React.FC = () => {
       setProfessorOptions(Array.from(new Set(res.data.map((s: FullSchedule) => `${s.professorFirstName || ''} ${s.professorLastName || ''}`.trim()).filter(Boolean))));
       setCourseOptions(Array.from(new Set(res.data.map((s: FullSchedule) => s.courseName).filter(Boolean))));
       setRoomOptions(Array.from(new Set(res.data.map((s: FullSchedule) => s.roomName).filter(Boolean))));
-      // Build years
-      const uniqueYears = Array.from(new Set(res.data.map((s: FullSchedule) => s.year))).sort((a, b) => (b as number) - (a as number));
+      // Build years (1, 2, 3)
+      const uniqueYears = Array.from(new Set(res.data.map((s: FullSchedule) => s.year))).sort((a, b) => (a as number) - (b as number));
       setYears(uniqueYears as number[]);
+      // Build academic years
+      const uniqueAcademicYears = Array.from(new Set(res.data.map((s: FullSchedule) => s.academicYear).filter(Boolean))).sort();
+      setAcademicYears(uniqueAcademicYears as string[]);
     } catch (err) {
       setSchedules([]);
       setFiltered([]);
@@ -242,6 +249,12 @@ const PublicSchedules: React.FC = () => {
     }
     if (pendingRoom) {
       result = result.filter(s => s.roomName.toLowerCase().includes(pendingRoom.toLowerCase()));
+    }
+    if (pendingYear) {
+      result = result.filter(s => s.year.toString() === pendingYear);
+    }
+    if (pendingAcademicYear) {
+      result = result.filter(s => s.academicYear === pendingAcademicYear);
     }
     setFiltered(result);
   };
@@ -314,7 +327,18 @@ const PublicSchedules: React.FC = () => {
                 onChange={e => setPendingYear(e.target.value)}
               >
                 <MenuItem value="">All</MenuItem>
-                {years.map(y => <MenuItem key={y} value={y}>{y}</MenuItem>)}
+                {years.map(y => <MenuItem key={y} value={y}>Year {y}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <FormControl sx={{ minWidth: 140 }}>
+              <InputLabel>Academic Year</InputLabel>
+              <Select
+                value={pendingAcademicYear}
+                label="Academic Year"
+                onChange={e => setPendingAcademicYear(e.target.value)}
+              >
+                <MenuItem value="">All</MenuItem>
+                {academicYears.map(ay => <MenuItem key={ay} value={ay}>{ay}</MenuItem>)}
               </Select>
             </FormControl>
             <Button variant="contained" color="primary" size="small" onClick={handleSearch} sx={{ height: 36, minWidth: 90 }}>
@@ -405,6 +429,7 @@ const PublicSchedules: React.FC = () => {
                                   {s.departmentName && (
                                     <Typography variant="caption" display="block">{s.departmentName}</Typography>
                                   )}
+                                  <Typography variant="caption" display="block">Year {s.year}, {s.academicYear}</Typography>
                                 </Box>
                               ))}
                       </TableCell>

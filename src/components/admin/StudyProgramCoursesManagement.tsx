@@ -28,10 +28,11 @@ import {
   ListItem,
   ListItemText,
   ListItemSecondaryAction,
-  Divider
+  Divider,
+  Grid
 } from '@mui/material';
 import { Add, Edit, Delete, Refresh, School, Book } from '@mui/icons-material';
-import { adminService } from '../../services/adminService';
+import { adminService, StudyProgramCourseAssignment, StudyProgramWithCourses } from '../../services/adminService';
 import { StudyProgram } from '../../types';
 
 interface Course {
@@ -40,7 +41,6 @@ interface Course {
   credits: number;
   pId: number;
   profesor: string;
-  spId?: number;
 }
 
 interface Department {
@@ -48,14 +48,10 @@ interface Department {
   dName: string;
 }
 
-interface StudyProgramWithCourses extends StudyProgram {
-  courses?: Course[];
-}
-
 interface FormData {
   spName: string;
   dId: string;
-  selectedCourseIds: number[];
+  courseAssignments: StudyProgramCourseAssignment[];
 }
 
 export default function StudyProgramCoursesManagement() {
@@ -69,10 +65,22 @@ export default function StudyProgramCoursesManagement() {
   const [formData, setFormData] = useState<FormData>({
     spName: '',
     dId: '',
-    selectedCourseIds: []
+    courseAssignments: []
   });
   const [search, setSearch] = useState('');
   const [searchOptions, setSearchOptions] = useState<string[]>([]);
+
+  // Academic year options
+  const academicYearOptions = [
+    '2023-2026',
+    '2024-2027',
+    '2025-2028',
+    '2026-2029',
+    '2027-2030'
+  ];
+
+  // Year options
+  const yearOptions = [1, 2, 3];
 
   useEffect(() => {
     loadData();
@@ -95,11 +103,20 @@ export default function StudyProgramCoursesManagement() {
         adminService.getAllDepartments ? adminService.getAllDepartments() : []
       ]);
       
-      // Group courses by study program
-      const programsWithCourses = programsData.map(program => ({
-        ...program,
-        courses: coursesData.filter(course => course.spId === program.spId)
-      }));
+      // Get detailed study programs with courses
+      const programsWithCourses = await Promise.all(
+        programsData.map(async (program: StudyProgram) => {
+          try {
+            return await adminService.getStudyProgramWithCourses(program.spId);
+          } catch (error) {
+            // If detailed fetch fails, return basic program info
+            return {
+              ...program,
+              courses: []
+            };
+          }
+        })
+      );
       
       setStudyPrograms(programsWithCourses);
       setCourses(coursesData);
@@ -117,14 +134,18 @@ export default function StudyProgramCoursesManagement() {
       setFormData({
         spName: program.spName,
         dId: program.dId.toString(),
-        selectedCourseIds: program.courses?.map(c => c.cId) || []
+        courseAssignments: program.courses.map(c => ({
+          courseId: c.courseId,
+          year: c.year,
+          academicYear: c.academicYear
+        }))
       });
     } else {
       setEditingProgram(null);
       setFormData({
         spName: '',
         dId: '',
-        selectedCourseIds: []
+        courseAssignments: []
       });
     }
     setOpenDialog(true);
@@ -136,26 +157,50 @@ export default function StudyProgramCoursesManagement() {
     setFormData({
       spName: '',
       dId: '',
-      selectedCourseIds: []
+      courseAssignments: []
     });
+  };
+
+  const handleAddCourseAssignment = () => {
+    setFormData(prev => ({
+      ...prev,
+      courseAssignments: [
+        ...prev.courseAssignments,
+        {
+          courseId: 0,
+          year: 1,
+          academicYear: '2023-2026'
+        }
+      ]
+    }));
+  };
+
+  const handleRemoveCourseAssignment = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      courseAssignments: prev.courseAssignments.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleCourseAssignmentChange = (index: number, field: keyof StudyProgramCourseAssignment, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      courseAssignments: prev.courseAssignments.map((assignment, i) => 
+        i === index ? { ...assignment, [field]: value } : assignment
+      )
+    }));
   };
 
   const handleSubmit = async () => {
     try {
       setError(null);
       if (editingProgram) {
-        // Update study program and its courses
+        // Update study program with course assignments
         await adminService.updateStudyProgram(editingProgram.spId, {
           spName: formData.spName,
-          dId: parseInt(formData.dId)
+          dId: parseInt(formData.dId),
+          courseAssignments: formData.courseAssignments
         });
-        
-        // Update course associations
-        for (const courseId of formData.selectedCourseIds) {
-          await adminService.updateCourse(courseId, {
-            spId: editingProgram.spId
-          });
-        }
       } else {
         // Create new study program
         const newProgram = await adminService.createStudyProgram({
@@ -163,10 +208,12 @@ export default function StudyProgramCoursesManagement() {
           dId: parseInt(formData.dId)
         });
         
-        // Associate courses with the new study program
-        for (const courseId of formData.selectedCourseIds) {
-          await adminService.updateCourse(courseId, {
-            spId: newProgram.spId
+        // Update with course assignments
+        if (formData.courseAssignments.length > 0) {
+          await adminService.updateStudyProgram(newProgram.spId, {
+            spName: formData.spName,
+            dId: parseInt(formData.dId),
+            courseAssignments: formData.courseAssignments
           });
         }
       }
@@ -189,16 +236,14 @@ export default function StudyProgramCoursesManagement() {
     }
   };
 
-  const handleRemoveCourse = async (programId: number, courseId: number) => {
-    try {
-      setError(null);
-      await adminService.updateCourse(courseId, {
-        spId: null
-      });
-      loadData();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to remove course from study program');
-    }
+  const getDepartmentName = (departmentId: number) => {
+    const department = departments.find(d => d.dId === departmentId);
+    return department?.dName || 'Unknown Department';
+  };
+
+  const getCourseName = (courseId: number) => {
+    const course = courses.find(c => c.cId === courseId);
+    return course?.cName || 'Unknown Course';
   };
 
   const filteredPrograms = studyPrograms.filter(program => {
@@ -206,18 +251,13 @@ export default function StudyProgramCoursesManagement() {
     return (
       program.spName.toLowerCase().includes(s) ||
       program.spId.toString().includes(s) ||
-      program.dName.toLowerCase().includes(s)
+      getDepartmentName(program.dId).toLowerCase().includes(s)
     );
   });
 
-  const getDepartmentName = (departmentId: number) => {
-    const department = departments.find(d => d.dId === departmentId);
-    return department ? department.dName : 'Unknown Department';
-  };
-
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
         <CircularProgress />
       </Box>
     );
@@ -225,24 +265,18 @@ export default function StudyProgramCoursesManagement() {
 
   return (
     <Box>
-      {/* Search Bar */}
-      <Box mb={2}>
-        <Autocomplete
-          freeSolo
-          options={searchOptions}
-          inputValue={search}
-          onInputChange={(_, value) => setSearch(value)}
-          getOptionLabel={(option) => (typeof option === 'string' ? option : '')}
-          renderInput={(params) => (
-            <TextField {...params} label="Search Study Programs" variant="outlined" size="small" />
-          )}
-          sx={{ width: 300 }}
-        />
-      </Box>
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
 
       {/* Header */}
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h5">Study Programs with Courses</Typography>
+        <Typography variant="h5" display="flex" alignItems="center">
+          <School sx={{ mr: 1 }} />
+          Study Programs with Courses
+        </Typography>
         <Box>
           <Button
             variant="outlined"
@@ -262,12 +296,25 @@ export default function StudyProgramCoursesManagement() {
         </Box>
       </Box>
 
-      {/* Error Alert */}
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
-          {error}
-        </Alert>
-      )}
+      {/* Search */}
+      <Box mb={3}>
+        <Autocomplete
+          options={searchOptions}
+          value={search}
+          onChange={(_, value) => setSearch(value || '')}
+          inputValue={search}
+          onInputChange={(_, value) => setSearch(value)}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="Search study programs"
+              variant="outlined"
+              size="small"
+            />
+          )}
+          sx={{ width: 300 }}
+        />
+      </Box>
 
       {/* Study Programs Table */}
       <TableContainer component={Paper}>
@@ -275,157 +322,187 @@ export default function StudyProgramCoursesManagement() {
           <TableHead>
             <TableRow>
               <TableCell>ID</TableCell>
-              <TableCell>Study Program</TableCell>
+              <TableCell>Name</TableCell>
               <TableCell>Department</TableCell>
               <TableCell>Courses</TableCell>
-              <TableCell align="center">Actions</TableCell>
+              <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredPrograms.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} align="center">
-                  <Typography variant="body2" color="textSecondary">
-                    No study programs found
-                  </Typography>
+            {filteredPrograms.map((program) => (
+              <TableRow key={program.spId}>
+                <TableCell>{program.spId}</TableCell>
+                <TableCell>{program.spName}</TableCell>
+                <TableCell>{getDepartmentName(program.dId)}</TableCell>
+                <TableCell>
+                  {program.courses.length > 0 ? (
+                    <Box>
+                      {program.courses.map((course, index) => (
+                        <Chip
+                          key={index}
+                          label={`${course.courseName} (Year ${course.year}, ${course.academicYear})`}
+                          size="small"
+                          sx={{ mr: 0.5, mb: 0.5 }}
+                          color="primary"
+                          variant="outlined"
+                        />
+                      ))}
+                    </Box>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">
+                      No courses assigned
+                    </Typography>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <IconButton
+                    color="primary"
+                    onClick={() => handleOpenDialog(program)}
+                    size="small"
+                  >
+                    <Edit />
+                  </IconButton>
+                  <IconButton
+                    color="error"
+                    onClick={() => handleDelete(program.spId)}
+                    size="small"
+                  >
+                    <Delete />
+                  </IconButton>
                 </TableCell>
               </TableRow>
-            ) : (
-              filteredPrograms.map((program) => (
-                <TableRow key={program.spId}>
-                  <TableCell>{program.spId}</TableCell>
-                  <TableCell>
-                    <Box display="flex" alignItems="center">
-                      <School sx={{ mr: 1, color: 'primary.main' }} />
-                      <Typography variant="body2" fontWeight="medium">
-                        {program.spName}
-                      </Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Chip label={program.dName} size="small" color="secondary" />
-                  </TableCell>
-                  <TableCell>
-                    <Box>
-                      {program.courses && program.courses.length > 0 ? (
-                        <List dense sx={{ p: 0 }}>
-                          {program.courses.map((course, index) => (
-                            <React.Fragment key={course.cId}>
-                              <ListItem sx={{ py: 0.5, px: 0 }}>
-                                <Book sx={{ mr: 1, fontSize: 16, color: 'text.secondary' }} />
-                                <ListItemText
-                                  primary={course.cName}
-                                  secondary={`${course.credits} credits`}
-                                  primaryTypographyProps={{ variant: 'body2' }}
-                                  secondaryTypographyProps={{ variant: 'caption' }}
-                                />
-                                <ListItemSecondaryAction>
-                                  <IconButton
-                                    size="small"
-                                    onClick={() => handleRemoveCourse(program.spId, course.cId)}
-                                    color="error"
-                                  >
-                                    <Delete fontSize="small" />
-                                  </IconButton>
-                                </ListItemSecondaryAction>
-                              </ListItem>
-                              {index < program.courses!.length - 1 && <Divider />}
-                            </React.Fragment>
-                          ))}
-                        </List>
-                      ) : (
-                        <Typography variant="body2" color="textSecondary">
-                          No courses assigned
-                        </Typography>
-                      )}
-                    </Box>
-                  </TableCell>
-                  <TableCell align="center">
-                    <IconButton
-                      size="small"
-                      onClick={() => handleOpenDialog(program)}
-                      color="primary"
-                    >
-                      <Edit />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleDelete(program.spId)}
-                      color="error"
-                    >
-                      <Delete />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
+            ))}
           </TableBody>
         </Table>
       </TableContainer>
 
-      {/* Create/Edit Dialog */}
+      {/* Dialog */}
       <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
         <DialogTitle>
-          {editingProgram ? 'Edit Study Program' : 'Add New Study Program'}
+          {editingProgram ? 'Edit Study Program' : 'Add Study Program'}
         </DialogTitle>
         <DialogContent>
-          <Box sx={{ pt: 1 }}>
-            <TextField
-              fullWidth
-              label="Study Program Name"
-              value={formData.spName}
-              onChange={(e) => setFormData({ ...formData, spName: e.target.value })}
-              margin="normal"
-              required
-            />
-            <FormControl fullWidth margin="normal" required>
-              <InputLabel>Department</InputLabel>
-              <Select
-                value={formData.dId}
-                onChange={(e) => setFormData({ ...formData, dId: e.target.value })}
-                label="Department"
-              >
-                {departments.map((dept) => (
-                  <MenuItem key={dept.dId} value={dept.dId.toString()}>
-                    {dept.dName}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <FormControl fullWidth margin="normal">
-              <InputLabel>Courses</InputLabel>
-              <Select
-                multiple
-                value={formData.selectedCourseIds}
-                onChange={(e) => setFormData({ ...formData, selectedCourseIds: e.target.value as number[] })}
-                label="Courses"
-                renderValue={(selected) => (
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    {selected.map((courseId) => {
-                      const course = courses.find(c => c.cId === courseId);
-                      return (
-                        <Chip key={courseId} label={course?.cName || courseId} size="small" />
-                      );
-                    })}
-                  </Box>
-                )}
-              >
-                {courses.map((course) => (
-                  <MenuItem key={course.cId} value={course.cId}>
-                    {course.cName} ({course.credits} credits)
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+          <Box sx={{ mt: 2 }}>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Study Program Name"
+                  value={formData.spName}
+                  onChange={(e) => setFormData(prev => ({ ...prev, spName: e.target.value }))}
+                  margin="normal"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth margin="normal">
+                  <InputLabel>Department</InputLabel>
+                  <Select
+                    value={formData.dId}
+                    onChange={(e) => setFormData(prev => ({ ...prev, dId: e.target.value }))}
+                    label="Department"
+                  >
+                    {departments.map((dept) => (
+                      <MenuItem key={dept.dId} value={dept.dId}>
+                        {dept.dName}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+            </Grid>
+
+            <Box sx={{ mt: 3 }}>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                <Typography variant="h6">Course Assignments</Typography>
+                <Button
+                  variant="outlined"
+                  startIcon={<Add />}
+                  onClick={handleAddCourseAssignment}
+                >
+                  Add Course
+                </Button>
+              </Box>
+
+              {formData.courseAssignments.map((assignment, index) => (
+                <Box key={index} sx={{ mb: 2, p: 2, border: '1px solid #ddd', borderRadius: 1 }}>
+                  <Grid container spacing={2} alignItems="center">
+                    <Grid item xs={12} sm={3}>
+                      <FormControl fullWidth size="small">
+                        <InputLabel>Course</InputLabel>
+                        <Select
+                          value={assignment.courseId}
+                          onChange={(e) => handleCourseAssignmentChange(index, 'courseId', e.target.value)}
+                          label="Course"
+                        >
+                          {courses.map((course) => (
+                            <MenuItem key={course.cId} value={course.cId}>
+                              {course.cName}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                    <Grid item xs={12} sm={2}>
+                      <FormControl fullWidth size="small">
+                        <InputLabel>Year</InputLabel>
+                        <Select
+                          value={assignment.year}
+                          onChange={(e) => handleCourseAssignmentChange(index, 'year', e.target.value)}
+                          label="Year"
+                        >
+                          {yearOptions.map((year) => (
+                            <MenuItem key={year} value={year}>
+                              Year {year}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                    <Grid item xs={12} sm={3}>
+                      <FormControl fullWidth size="small">
+                        <InputLabel>Academic Year</InputLabel>
+                        <Select
+                          value={assignment.academicYear}
+                          onChange={(e) => handleCourseAssignmentChange(index, 'academicYear', e.target.value)}
+                          label="Academic Year"
+                        >
+                          {academicYearOptions.map((academicYear) => (
+                            <MenuItem key={academicYear} value={academicYear}>
+                              {academicYear}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                    <Grid item xs={12} sm={2}>
+                      <Typography variant="body2" color="text.secondary">
+                        {assignment.courseId ? getCourseName(assignment.courseId) : 'Select course'}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={2}>
+                      <IconButton
+                        color="error"
+                        onClick={() => handleRemoveCourseAssignment(index)}
+                        size="small"
+                      >
+                        <Delete />
+                      </IconButton>
+                    </Grid>
+                  </Grid>
+                </Box>
+              ))}
+
+              {formData.courseAssignments.length === 0 && (
+                <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ py: 3 }}>
+                  No courses assigned. Click "Add Course" to assign courses to this study program.
+                </Typography>
+              )}
+            </Box>
           </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button
-            onClick={handleSubmit}
-            variant="contained"
-            disabled={!formData.spName || !formData.dId}
-          >
+          <Button onClick={handleSubmit} variant="contained">
             {editingProgram ? 'Update' : 'Create'}
           </Button>
         </DialogActions>

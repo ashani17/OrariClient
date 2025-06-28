@@ -19,10 +19,13 @@ import {
   TableRow,
   CircularProgress,
   Chip,
+  Stack,
 } from '@mui/material';
 import { useAuthStore } from '../../store/authStore';
 import type { RegisterData } from '../../services/authService';
 import api from '../../services/api';
+import { Link as RouterLink } from 'react-router-dom';
+import { ThemeToggle } from '../../components/ThemeToggle';
 
 const passwordRequirements = [
   { regex: /.{8,}/, message: 'At least 8 characters' },
@@ -121,7 +124,12 @@ function PublicSchedulesBackgroundTable() {
   );
 }
 
-export const Register = () => {
+interface RegisterProps {
+  mode: 'light' | 'dark';
+  onToggleTheme: () => void;
+}
+
+export const Register: React.FC<RegisterProps> = ({ mode, onToggleTheme }) => {
   const navigate = useNavigate();
   const { register, error, isLoading, clearError } = useAuthStore();
   const [data, setData] = useState<RegisterData>({
@@ -182,131 +190,171 @@ export const Register = () => {
   return (
     <Box sx={{ position: 'relative', minHeight: '100vh', width: '100vw', overflow: 'hidden' }}>
       <PublicSchedulesBackgroundTable />
-      <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'flex-start', alignItems: 'center', minHeight: '100vh', pl: 0, ml: 10 }}>
-        <Box sx={{ width: 400, maxWidth: '100%' }}>
-          <Paper
-            elevation={3}
-            sx={{
-              padding: 4,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              width: '100%',
-            }}
-          >
-            <Typography component="h1" variant="h5">
-              Register
-            </Typography>
-            <Alert severity="info" sx={{ mb: 2, width: '100%' }}>
-              Only emails from <strong>fshn.edu.al</strong> and <strong>fshnstudent.info</strong> domains are allowed.
-            </Alert>
-            <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3, width: '100%' }}>
-              {error && (
-                <Alert severity="error" sx={{ mb: 2 }}>
-                  {error}
-                </Alert>
-              )}
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    required
-                    fullWidth
-                    id="name"
-                    label="First Name"
-                    name="name"
-                    autoComplete="given-name"
-                    value={data.name}
-                    onChange={handleChange}
-                    autoFocus
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    required
-                    fullWidth
-                    id="lastName"
-                    label="Last Name"
-                    name="lastName"
-                    autoComplete="family-name"
-                    value={data.lastName}
-                    onChange={handleChange}
-                  />
-                </Grid>
-              </Grid>
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                id="email"
-                label="Email Address"
-                name="email"
-                autoComplete="email"
-                value={data.email}
-                onChange={handleChange}
-                type="email"
-              />
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                name="password"
-                label="Password"
-                type="password"
-                id="password"
-                autoComplete="new-password"
-                value={data.password}
-                onChange={handleChange}
-              />
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                name="confirmPassword"
-                label="Confirm Password"
-                type="password"
-                id="confirmPassword"
-                autoComplete="new-password"
-                value={data.confirmPassword}
-                onChange={handleChange}
-              />
-              {data.password && (
-                <>
-                  <Box sx={{ mt: 1 }}>
-                    <LinearProgress
-                      variant="determinate"
-                      value={passwordStrength}
-                      color={getPasswordStrengthColor(passwordStrength)}
+      
+      {/* Theme Toggle in top-right corner */}
+      <Box sx={{ 
+        position: 'fixed', 
+        top: 16, 
+        right: 16, 
+        zIndex: 10 
+      }}>
+        <ThemeToggle mode={mode} onToggle={onToggleTheme} />
+      </Box>
+      
+      <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', px: 4 }}>
+        <Container component="main" maxWidth="lg" sx={{ display: 'flex', alignItems: 'center', gap: 4, flexDirection: { xs: 'column', md: 'row' } }}>
+          {/* Form Section */}
+          <Box sx={{ flex: 1, maxWidth: 400, order: { xs: 2, md: 1 } }}>
+            <Paper
+              elevation={3}
+              sx={{
+                padding: 4,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                width: '100%',
+              }}
+            >
+              <Typography component="h1" variant="h5">
+                Sign up
+              </Typography>
+              <Alert severity="info" sx={{ mb: 2, width: '100%' }}>
+                Only emails from <strong>fshn.edu.al</strong> and <strong>fshnstudent.info</strong> domains are allowed.
+              </Alert>
+              <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1, width: '100%' }}>
+                {error && (
+                  <Alert severity="error" sx={{ mb: 2 }}>
+                    {error}
+                  </Alert>
+                )}
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      required
+                      fullWidth
+                      id="name"
+                      label="First Name"
+                      name="name"
+                      autoComplete="given-name"
+                      value={data.name}
+                      onChange={handleChange}
+                      autoFocus
                     />
-                  </Box>
-                  {validationErrors.length > 0 && (
-                    <Alert severity="info" sx={{ mt: 1 }}>
-                      <Typography variant="body2">Password requirements:</Typography>
-                      <ul style={{ margin: '4px 0', paddingLeft: '20px' }}>
-                        {validationErrors.map((error, index) => (
-                          <li key={index}>{error}</li>
-                        ))}
-                      </ul>
-                    </Alert>
-                  )}
-                </>
-              )}
-              <Button
-                type="submit"
-                fullWidth
-                variant="contained"
-                sx={{ mt: 3, mb: 2 }}
-                disabled={isLoading || validationErrors.length > 0}
-              >
-                {isLoading ? 'Registering...' : 'Register'}
-              </Button>
-              <Box sx={{ textAlign: 'center' }}>
-                <Link href="/login" variant="body2">
-                  Already have an account? Sign in
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      required
+                      fullWidth
+                      id="lastName"
+                      label="Last Name"
+                      name="lastName"
+                      autoComplete="family-name"
+                      value={data.lastName}
+                      onChange={handleChange}
+                    />
+                  </Grid>
+                </Grid>
+                <TextField
+                  margin="normal"
+                  required
+                  fullWidth
+                  id="email"
+                  label="Email Address"
+                  name="email"
+                  autoComplete="email"
+                  value={data.email}
+                  onChange={handleChange}
+                  type="email"
+                />
+                <TextField
+                  margin="normal"
+                  required
+                  fullWidth
+                  name="password"
+                  label="Password"
+                  type="password"
+                  id="password"
+                  autoComplete="new-password"
+                  value={data.password}
+                  onChange={handleChange}
+                />
+                <TextField
+                  margin="normal"
+                  required
+                  fullWidth
+                  name="confirmPassword"
+                  label="Confirm Password"
+                  type="password"
+                  id="confirmPassword"
+                  autoComplete="new-password"
+                  value={data.confirmPassword}
+                  onChange={handleChange}
+                />
+                {data.password && (
+                  <>
+                    <Box sx={{ mt: 1 }}>
+                      <LinearProgress
+                        variant="determinate"
+                        value={passwordStrength}
+                        color={getPasswordStrengthColor(passwordStrength)}
+                      />
+                    </Box>
+                    {validationErrors.length > 0 && (
+                      <Alert severity="info" sx={{ mt: 1 }}>
+                        <Typography variant="body2">Password requirements:</Typography>
+                        <ul style={{ margin: '4px 0', paddingLeft: '20px' }}>
+                          {validationErrors.map((error, index) => (
+                            <li key={index}>{error}</li>
+                          ))}
+                        </ul>
+                      </Alert>
+                    )}
+                  </>
+                )}
+                <Button
+                  type="submit"
+                  fullWidth
+                  variant="contained"
+                  sx={{ mt: 3, mb: 2 }}
+                  disabled={isLoading || validationErrors.length > 0}
+                >
+                  {isLoading ? 'Signing up...' : 'Sign Up'}
+                </Button>
+                <Stack spacing={1} sx={{ textAlign: 'center' }}>
+                  <Link component={RouterLink} to="/login" variant="body2">
+                    Already have an account? Sign in
+                  </Link>
+                </Stack>
+              </Box>
+              <Box mt={2} textAlign="center">
+                <Link component={RouterLink} to="/schedules" style={{ textDecoration: 'none', color: '#1976d2', fontWeight: 500, fontSize: '1.3rem', display: 'inline-block', margin: '12px auto 0 auto' }}>
+                  View Public Schedules
                 </Link>
               </Box>
-            </Box>
-          </Paper>
-        </Box>
+            </Paper>
+          </Box>
+
+          {/* Logo Section */}
+          <Box sx={{ 
+            flex: 1, 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center',
+            order: { xs: 1, md: 2 },
+            mb: { xs: 3, md: 0 }
+          }}>
+            <Box
+              component="img"
+              src="/logo.png"
+              alt="Orari Logo"
+              sx={{
+                height: { xs: 150, sm: 200, md: 279.5 },
+                width: 'auto',
+                maxWidth: '100%',
+              }}
+            />
+          </Box>
+        </Container>
       </Box>
     </Box>
   );

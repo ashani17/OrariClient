@@ -60,6 +60,35 @@ export interface CreateRoomDTO {
   rDescription?: string;
 }
 
+export interface StudyProgramCourseAssignment {
+  courseId: number;
+  year: number; // 1, 2, or 3
+  academicYear: string; // e.g., "2023-2026"
+}
+
+export interface UpdateStudyProgramDTO {
+  spName: string;
+  dId: number;
+  courseAssignments: StudyProgramCourseAssignment[];
+}
+
+export interface StudyProgramCourseInfo {
+  courseId: number;
+  courseName: string;
+  credits: number;
+  professor: string;
+  year: number;
+  academicYear: string;
+}
+
+export interface StudyProgramWithCourses {
+  spId: number;
+  spName: string;
+  dId: number;
+  dName: string;
+  courses: StudyProgramCourseInfo[];
+}
+
 class AdminService {
   // User Management
   async getAllUsers(): Promise<any[]> {
@@ -391,6 +420,18 @@ class AdminService {
     }
   }
 
+  async getStudyProgramWithCourses(id: number): Promise<StudyProgramWithCourses> {
+    try {
+      const response = await api.get(`/studyprogram/${id}`);
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        throw new Error(error.response?.data?.message || 'Failed to fetch study program with courses');
+      }
+      throw error;
+    }
+  }
+
   async createStudyProgram(data: any): Promise<any> {
     try {
       const response = await api.post('/studyprogram', data);
@@ -403,7 +444,7 @@ class AdminService {
     }
   }
 
-  async updateStudyProgram(id: number, data: any): Promise<any> {
+  async updateStudyProgram(id: number, data: UpdateStudyProgramDTO): Promise<any> {
     try {
       const response = await api.put(`/studyprogram?id=${id}`, data);
       return response.data;
@@ -421,6 +462,29 @@ class AdminService {
     } catch (error) {
       if (error instanceof AxiosError) {
         throw new Error(error.response?.data?.message || 'Failed to delete study program');
+      }
+      throw error;
+    }
+  }
+
+  async getSchedulesByStudyProgram(id: number, year?: number, academicYear?: string): Promise<any[]> {
+    try {
+      let url = `/studyprogram/${id}/schedules`;
+      const params = new URLSearchParams();
+      if (year) {
+        params.append('year', year.toString());
+      }
+      if (academicYear) {
+        params.append('academicYear', academicYear);
+      }
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+      const response = await api.get(url);
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        throw new Error(error.response?.data?.message || 'Failed to fetch schedules by study program');
       }
       throw error;
     }

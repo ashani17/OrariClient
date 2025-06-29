@@ -11,6 +11,7 @@ import { theme, darkTheme } from './theme';
 import { CssBaseline } from '@mui/material';
 import { useAuthStore } from './store/authStore';
 import { useApiHealth } from './hooks/useApiHealth';
+import { useSystemTheme } from './hooks/useSystemTheme';
 import AdminPanel from './pages/admin/AdminPanel';
 import { MySchedulePage, ChatPage, PublicSchedules, Settings } from './pages';
 import { useEffect, useState } from 'react';
@@ -18,10 +19,33 @@ import DashboardPage from './pages/dashboard/DashboardPage';
 
 function App() {
   const { isAuthenticated, user } = useAuthStore();
-  const [mode, setMode] = useState<'light' | 'dark'>(() => localStorage.getItem('themeMode') === 'dark' ? 'dark' : 'light');
+  const systemTheme = useSystemTheme();
+  
+  // Initialize theme from localStorage or system preference
+  const [mode, setMode] = useState<'light' | 'dark'>(() => {
+    const savedTheme = localStorage.getItem('themeMode');
+    if (savedTheme === 'dark' || savedTheme === 'light') {
+      return savedTheme;
+    }
+    // If no saved preference, use system theme
+    return systemTheme;
+  });
+  
+  // Update theme when system theme changes (only if user hasn't set a preference)
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('themeMode');
+    if (!savedTheme) {
+      setMode(systemTheme);
+    }
+  }, [systemTheme]);
+  
   useEffect(() => {
     localStorage.setItem('themeMode', mode);
   }, [mode]);
+
+  const handleToggleTheme = () => {
+    setMode(prevMode => prevMode === 'light' ? 'dark' : 'light');
+  };
   
   // Add API health check
   useApiHealth();
@@ -37,7 +61,7 @@ function App() {
               isAuthenticated ? (
                 <Navigate to="/dashboard" replace />
               ) : (
-                <Login />
+                <Login mode={mode} onToggleTheme={handleToggleTheme} />
               )
             }
           />
@@ -47,7 +71,7 @@ function App() {
               isAuthenticated ? (
                 <Navigate to="/dashboard" replace />
               ) : (
-                <Register />
+                <Register mode={mode} onToggleTheme={handleToggleTheme} />
               )
             }
           />
@@ -57,7 +81,7 @@ function App() {
               isAuthenticated ? (
                 <Navigate to="/dashboard" replace />
               ) : (
-                <ForgotPassword />
+                <ForgotPassword mode={mode} onToggleTheme={handleToggleTheme} />
               )
             }
           />
@@ -67,7 +91,7 @@ function App() {
               isAuthenticated ? (
                 <Navigate to="/dashboard" replace />
               ) : (
-                <ResetPassword />
+                <ResetPassword mode={mode} onToggleTheme={handleToggleTheme} />
               )
             }
           />
@@ -97,7 +121,7 @@ function App() {
             path="/*"
             element={
               <ProtectedRoute>
-                <MainLayout>
+                <MainLayout mode={mode} onToggleTheme={handleToggleTheme}>
                   <Routes>
                     <Route path="/dashboard" element={<DashboardPage />} />
                     <Route path="/schedule" element={<h1>Schedule</h1>} />

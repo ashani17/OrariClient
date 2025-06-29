@@ -9,8 +9,26 @@ import {
   Alert,
   Paper,
   LinearProgress,
+  Stack,
+  Link,
+  TableContainer,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  Chip,
+  CircularProgress,
 } from '@mui/material';
 import { useAuthStore } from '../../store/authStore';
+import { Link as RouterLink } from 'react-router-dom';
+import api from '../../services/api';
+import { ThemeToggle } from "../../components/ThemeToggle";
+
+interface ResetPasswordProps {
+  mode: 'light' | 'dark';
+  onToggleTheme: () => void;
+}
 
 const passwordRequirements = [
   { regex: /.{8,}/, message: 'At least 8 characters' },
@@ -20,7 +38,96 @@ const passwordRequirements = [
   { regex: /[^A-Za-z0-9]/, message: 'At least one special character' },
 ];
 
-export const ResetPassword = () => {
+function PublicSchedulesBackgroundTable() {
+  const [schedules, setSchedules] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSchedules = async () => {
+      try {
+        const res = await api.get('/schedule/dashboard-full');
+        setSchedules(res.data);
+      } catch {
+        setSchedules([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSchedules();
+  }, []);
+
+  return (
+    <Box sx={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '100vw',
+      height: '100vh',
+      zIndex: 0,
+      overflow: 'hidden',
+      pointerEvents: 'none',
+      filter: 'blur(6px) grayscale(0.2)',
+      opacity: 0.7,
+      background: 'rgba(30,30,30,0.35)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    }}>
+      <Box sx={{ width: '80vw', maxHeight: '80vh', overflow: 'auto' }}>
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Date</TableCell>
+                <TableCell>Start</TableCell>
+                <TableCell>End</TableCell>
+                <TableCell>Department</TableCell>
+                <TableCell>Study Program</TableCell>
+                <TableCell>Course</TableCell>
+                <TableCell>Professor</TableCell>
+                <TableCell>Room</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={8} align="center">
+                    <CircularProgress size={24} />
+                  </TableCell>
+                </TableRow>
+              ) : schedules.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} align="center">
+                    <Typography variant="body2" color="textSecondary">No schedules found</Typography>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                schedules.slice(0, 20).map((s) => (
+                  <TableRow key={s.sId}>
+                    <TableCell>{s.date}</TableCell>
+                    <TableCell>{s.startTime}</TableCell>
+                    <TableCell>{s.endTime}</TableCell>
+                    <TableCell>{s.departmentName}</TableCell>
+                    <TableCell>{s.studyProgramName}</TableCell>
+                    <TableCell>
+                      <Chip label={s.courseName} size="small" color="primary" />
+                    </TableCell>
+                    <TableCell>{`${s.professorFirstName || ''} ${s.professorLastName || ''}`.trim()}</TableCell>
+                    <TableCell>
+                      <Chip label={s.roomName} size="small" color="secondary" />
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Box>
+    </Box>
+  );
+}
+
+export const ResetPassword: React.FC<ResetPasswordProps> = ({ mode, onToggleTheme }) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
@@ -88,94 +195,115 @@ export const ResetPassword = () => {
   };
 
   return (
-    <Container component="main" maxWidth="xs">
-      <Box
-        sx={{
-          marginTop: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-        }}
-      >
-        <Paper
-          elevation={3}
-          sx={{
-            padding: 4,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            width: '100%',
-          }}
-        >
-          <Typography component="h1" variant="h5">
-            Reset Password
-          </Typography>
-          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1, width: '100%' }}>
-            {error && (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                {error}
-              </Alert>
-            )}
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              name="password"
-              label="New Password"
-              type="password"
-              id="password"
-              autoComplete="new-password"
-              value={password}
-              onChange={handlePasswordChange}
-              error={validationErrors.length > 0}
-            />
-            {password && (
-              <>
-                <Box sx={{ mt: 1 }}>
-                  <LinearProgress
-                    variant="determinate"
-                    value={passwordStrength(password)}
-                    color={getPasswordStrengthColor(passwordStrength(password))}
-                  />
-                </Box>
-                {validationErrors.length > 0 && (
-                  <Alert severity="info" sx={{ mt: 1 }}>
-                    <Typography variant="body2">Password requirements:</Typography>
-                    <ul style={{ margin: '4px 0', paddingLeft: '20px' }}>
-                      {validationErrors.map((error, index) => (
-                        <li key={index}>{error}</li>
-                      ))}
-                    </ul>
+    <Box sx={{ position: 'relative', minHeight: '100vh', width: '100vw', overflow: 'hidden' }}>
+      <PublicSchedulesBackgroundTable />
+      
+      {/* Theme Toggle in top-right corner */}
+      <Box sx={{ 
+        position: 'fixed', 
+        top: 16, 
+        right: 16, 
+        zIndex: 10 
+      }}>
+        <ThemeToggle mode={mode} onToggle={onToggleTheme} />
+      </Box>
+      
+      <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', px: 4 }}>
+        <Container component="main" maxWidth="lg" sx={{ display: 'flex', alignItems: 'center', gap: 4, flexDirection: { xs: 'column', md: 'row' } }}>
+          {/* Form Section */}
+          <Box sx={{ flex: 1, maxWidth: 400, order: { xs: 2, md: 1 } }}>
+            <Paper
+              elevation={3}
+              sx={{
+                padding: 4,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                width: '100%',
+              }}
+            >
+              <Typography component="h1" variant="h5">
+                Reset Password
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1, textAlign: 'center' }}>
+                Enter your new password below.
+              </Typography>
+              <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3, width: '100%' }}>
+                {error && (
+                  <Alert severity="error" sx={{ mb: 2 }}>
+                    {error}
                   </Alert>
                 )}
-              </>
-            )}
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              name="confirmPassword"
-              label="Confirm Password"
-              type="password"
-              id="confirmPassword"
-              autoComplete="new-password"
-              value={confirmPassword}
-              onChange={handleConfirmPasswordChange}
-              error={!passwordsMatch && confirmPassword !== ''}
-              helperText={!passwordsMatch && confirmPassword !== '' ? 'Passwords do not match' : ''}
-            />
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              sx={{ mt: 3, mb: 2 }}
-              disabled={isLoading || validationErrors.length > 0 || !passwordsMatch || !password || !confirmPassword}
-            >
-              {isLoading ? 'Resetting Password...' : 'Reset Password'}
-            </Button>
+                <TextField
+                  margin="normal"
+                  required
+                  fullWidth
+                  name="password"
+                  label="New Password"
+                  type="password"
+                  id="password"
+                  autoComplete="new-password"
+                  autoFocus
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <TextField
+                  margin="normal"
+                  required
+                  fullWidth
+                  name="confirmPassword"
+                  label="Confirm New Password"
+                  type="password"
+                  id="confirmPassword"
+                  autoComplete="new-password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+                <Button
+                  type="submit"
+                  fullWidth
+                  variant="contained"
+                  sx={{ mt: 3, mb: 2 }}
+                  disabled={isLoading || password !== confirmPassword}
+                >
+                  {isLoading ? 'Resetting...' : 'Reset Password'}
+                </Button>
+                <Stack spacing={1} sx={{ textAlign: 'center' }}>
+                  <Link component={RouterLink} to="/login" variant="body2">
+                    Back to Sign In
+                  </Link>
+                </Stack>
+              </Box>
+              <Box mt={2} textAlign="center">
+                <Link component={RouterLink} to="/schedules" style={{ textDecoration: 'none', color: '#1976d2', fontWeight: 500, fontSize: '1.3rem', display: 'inline-block', margin: '12px auto 0 auto' }}>
+                  View Public Schedules
+                </Link>
+              </Box>
+            </Paper>
           </Box>
-        </Paper>
+
+          {/* Logo Section */}
+          <Box sx={{ 
+            flex: 1, 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center',
+            order: { xs: 1, md: 2 },
+            mb: { xs: 3, md: 0 }
+          }}>
+            <Box
+              component="img"
+              src="/logo.png"
+              alt="Orari Logo"
+              sx={{
+                height: { xs: 150, sm: 200, md: 279.5 },
+                width: 'auto',
+                maxWidth: '100%',
+              }}
+            />
+          </Box>
+        </Container>
       </Box>
-    </Container>
+    </Box>
   );
 }; 

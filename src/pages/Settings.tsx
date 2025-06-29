@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
-import { Box, Typography, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Alert, Stack, Tab, Tabs, Switch, FormControlLabel, Chip } from '@mui/material';
-import { Email, CheckCircle, Warning } from '@mui/icons-material';
+import { Box, Typography, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Alert, Stack, Tab, Tabs, Switch, FormControlLabel, Chip, Divider } from '@mui/material';
+import { Email, CheckCircle, Warning, Brightness4, Brightness7 } from '@mui/icons-material';
 import { authService } from '../services/authService';
 import { useAuthStore } from '../store/authStore';
 import api from '../services/api';
 
-const Settings: React.FC = () => {
+interface SettingsProps {
+  mode: 'light' | 'dark';
+  setMode: (mode: 'light' | 'dark') => void;
+}
+
+const Settings: React.FC<SettingsProps> = ({ mode, setMode }) => {
   const { user, refreshUser } = useAuthStore();
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [tab, setTab] = useState(0);
@@ -172,6 +177,27 @@ const Settings: React.FC = () => {
             </Alert>
           )}
         </Box>
+
+        {/* Theme Settings Section */}
+        <Box>
+          <Typography variant="h6" mb={2}>Theme</Typography>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={mode === 'dark'}
+                onChange={(e) => setMode(e.target.checked ? 'dark' : 'light')}
+                icon={<Brightness4 />}
+                checkedIcon={<Brightness7 />}
+              />
+            }
+            label={`${mode === 'dark' ? 'Dark' : 'Light'} Mode`}
+          />
+          <Typography variant="body2" color="text.secondary" mt={1}>
+            Switch between light and dark themes for better viewing experience.
+          </Typography>
+        </Box>
+
+        <Divider />
 
         {/* User Details Section */}
         <Box>

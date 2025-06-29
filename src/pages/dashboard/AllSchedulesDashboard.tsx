@@ -52,7 +52,8 @@ interface FullSchedule {
   studyProgramName?: string;
   departmentId?: number;
   departmentName?: string;
-  year: number;
+  year: number; // 1, 2, or 3
+  academicYear: string; // e.g., "2023-2026"
 }
 
 interface WeekSchedule {
@@ -71,7 +72,9 @@ const AllSchedulesDashboard: React.FC = () => {
   const [course, setCourse] = useState<string>('');
   const [room, setRoom] = useState<string>('');
   const [year, setYear] = useState<string>('');
+  const [academicYear, setAcademicYear] = useState<string>('');
   const [years, setYears] = useState<number[]>([]);
+  const [academicYears, setAcademicYears] = useState<string[]>([]);
   const [professorOptions, setProfessorOptions] = useState<string[]>([]);
   const [courseOptions, setCourseOptions] = useState<string[]>([]);
   const [roomOptions, setRoomOptions] = useState<string[]>([]);
@@ -79,6 +82,7 @@ const AllSchedulesDashboard: React.FC = () => {
   const [pendingCourse, setPendingCourse] = useState<string>('');
   const [pendingRoom, setPendingRoom] = useState<string>('');
   const [pendingYear, setPendingYear] = useState<string>('');
+  const [pendingAcademicYear, setPendingAcademicYear] = useState<string>('');
   const [studyProgramOptions, setStudyProgramOptions] = useState<StudyProgram[]>([]);
   const [pendingStudyProgram, setPendingStudyProgram] = useState<string>('');
   const [currentWeekStart, setCurrentWeekStart] = useState(() => {
@@ -121,11 +125,14 @@ const AllSchedulesDashboard: React.FC = () => {
       setProfessorOptions(Array.from(new Set(res.data.map((s: FullSchedule) => `${s.professorFirstName || ''} ${s.professorLastName || ''}`.trim()).filter(Boolean))));
       setCourseOptions(Array.from(new Set(res.data.map((s: FullSchedule) => s.courseName).filter(Boolean))));
       setRoomOptions(Array.from(new Set(res.data.map((s: FullSchedule) => s.roomName).filter(Boolean))));
-      // Build years
+      // Build years (1, 2, 3)
       const uniqueYears = Array.from(new Set(res.data.map((s: FullSchedule) => s.year)))
         .filter(year => year !== undefined && year !== null && !isNaN(year))
-        .sort((a, b) => (b as number) - (a as number));
+        .sort((a, b) => (a as number) - (b as number));
       setYears(uniqueYears as number[]);
+      // Build academic years
+      const uniqueAcademicYears = Array.from(new Set(res.data.map((s: FullSchedule) => s.academicYear).filter(Boolean))).sort();
+      setAcademicYears(uniqueAcademicYears as string[]);
     } catch (err) {
       setSchedules([]);
       setFiltered([]);
@@ -150,6 +157,12 @@ const AllSchedulesDashboard: React.FC = () => {
     }
     if (pendingRoom) {
       result = result.filter(s => s.roomName.toLowerCase().includes(pendingRoom.toLowerCase()));
+    }
+    if (pendingYear) {
+      result = result.filter(s => s.year.toString() === pendingYear);
+    }
+    if (pendingAcademicYear) {
+      result = result.filter(s => s.academicYear === pendingAcademicYear);
     }
     setFiltered(result);
   };
@@ -219,7 +232,7 @@ const AllSchedulesDashboard: React.FC = () => {
     ]);
     const doc = new jsPDF();
     const isDark = theme.palette.mode === 'dark';
-    doc.autoTable({
+    (doc as any).autoTable({
       head: [[
         'Date',
         'Day',
@@ -301,8 +314,19 @@ const AllSchedulesDashboard: React.FC = () => {
             label="Year"
             onChange={e => setPendingYear(e.target.value)}
           >
-            <MenuItem key="all" value="">All</MenuItem>
-            {years.filter(y => y !== undefined && y !== null && !isNaN(y)).map(y => <MenuItem key={y} value={y}>{y}</MenuItem>)}
+            <MenuItem value="">All</MenuItem>
+            {years.map(y => <MenuItem key={y} value={y.toString()}>Year {y}</MenuItem>)}
+          </Select>
+        </FormControl>
+        <FormControl sx={{ minWidth: 140 }}>
+          <InputLabel>Academic Year</InputLabel>
+          <Select
+            value={pendingAcademicYear}
+            label="Academic Year"
+            onChange={e => setPendingAcademicYear(e.target.value)}
+          >
+            <MenuItem value="">All</MenuItem>
+            {academicYears.map(ay => <MenuItem key={ay} value={ay}>{ay}</MenuItem>)}
           </Select>
         </FormControl>
         <Button variant="contained" color="primary" onClick={handleSearch} sx={{ height: 40 }}>
@@ -391,6 +415,7 @@ const AllSchedulesDashboard: React.FC = () => {
                               {s.studyProgramName && (
                                 <Typography variant="caption" display="block">{s.studyProgramName}</Typography>
                               )}
+                              <Typography variant="caption" display="block">Year {s.year}, {s.academicYear}</Typography>
                             </Box>
                           ))}
                         </TableCell>

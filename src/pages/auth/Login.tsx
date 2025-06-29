@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import {
   Box,
@@ -23,6 +23,13 @@ import { useAuthStore } from '../../store/authStore';
 import type { LoginCredentials } from '../../services/authService';
 import api from '../../services/api';
 import utiranaLogo from 'C:/Users/User/source/repos/OrariClient/src/assets/University_of_Tirana_logo.png';
+import logo from '/logo.png';
+import { ThemeToggle } from '../../components/ThemeToggle';
+
+interface LoginProps {
+  mode: 'light' | 'dark';
+  onToggleTheme: () => void;
+}
 
 function PublicSchedulesBackgroundTable() {
   const [schedules, setSchedules] = useState([]);
@@ -113,7 +120,7 @@ function PublicSchedulesBackgroundTable() {
   );
 }
 
-export const Login = () => {
+export const Login: React.FC<LoginProps> = ({ mode, onToggleTheme }) => {
   const navigate = useNavigate();
   const { login, error, isLoading, clearError } = useAuthStore();
   const [credentials, setCredentials] = useState<LoginCredentials>({
@@ -169,16 +176,21 @@ export const Login = () => {
   return (
     <Box sx={{ position: 'relative', minHeight: '100vh', width: '100vw', overflow: 'hidden' }}>
       <PublicSchedulesBackgroundTable />
-      <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'flex-start', alignItems: 'flex-start', minHeight: '100vh', pl: 10, ml: 0 }}>
-        <Container component="main" maxWidth="xs" sx={{ ml: 0 }}>
-          <Box
-            sx={{
-              marginTop: 8,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'flex-start',
-            }}
-          >
+      
+      {/* Theme Toggle in top-right corner */}
+      <Box sx={{ 
+        position: 'fixed', 
+        top: 16, 
+        right: 16, 
+        zIndex: 10 
+      }}>
+        <ThemeToggle mode={mode} onToggle={onToggleTheme} />
+      </Box>
+      
+      <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', px: 4 }}>
+        <Container component="main" maxWidth="lg" sx={{ display: 'flex', alignItems: 'center', gap: 4, flexDirection: { xs: 'column', md: 'row' } }}>
+          {/* Form Section */}
+          <Box sx={{ flex: 1, maxWidth: 400, order: { xs: 2, md: 1 } }}>
             <Paper
               elevation={3}
               sx={{
@@ -192,7 +204,7 @@ export const Login = () => {
               <Typography component="h1" variant="h5">
                 Sign in
               </Typography>
-              <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
+              <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1, width: '100%' }}>
                 {error && (
                   <Alert severity="error" sx={{ mb: 2 }}>
                     {error}
@@ -263,6 +275,27 @@ export const Login = () => {
                 </Link>
               </Box>
             </Paper>
+          </Box>
+
+          {/* Logo Section */}
+          <Box sx={{ 
+            flex: 1, 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center',
+            order: { xs: 1, md: 2 },
+            mb: { xs: 3, md: 0 }
+          }}>
+            <Box
+              component="img"
+              src="/logo.png"
+              alt="Orari Logo"
+              sx={{
+                height: { xs: 150, sm: 200, md: 279.5 },
+                width: 'auto',
+                maxWidth: '100%',
+              }}
+            />
           </Box>
         </Container>
       </Box>

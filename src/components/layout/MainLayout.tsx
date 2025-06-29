@@ -40,12 +40,15 @@ import { getRolesFromToken, decodeJwtToken } from '../../utils/jwtUtils';
 import FreeRoomsSidebar from '../FreeRoomsSidebar';
 import chatService from '../../services/chatService';
 import { adminService } from '../../services/adminService';
+import { ThemeToggle } from '../ThemeToggle';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import api from '../../services/api';
 
 interface MainLayoutProps {
   children: ReactNode;
+  mode: 'light' | 'dark';
+  onToggleTheme: () => void;
 }
 
 interface MenuItemType {
@@ -62,7 +65,7 @@ const menuItems: MenuItemType[] = [
   { text: 'Settings', icon: <Settings />, path: '/settings' },
 ];
 
-export const MainLayout = ({ children }: MainLayoutProps) => {
+export const MainLayout = ({ children, mode, onToggleTheme }: MainLayoutProps) => {
   const theme = useTheme();
   const navigate = useNavigate();
   const { user, logout, refreshUser } = useAuthStore();
@@ -270,6 +273,7 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
             Orari
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <ThemeToggle mode={mode} onToggle={onToggleTheme} />
             <Typography variant="body1" sx={{ mr: 2 }}>
               {user?.name} {user?.surname}
             </Typography>

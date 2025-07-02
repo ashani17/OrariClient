@@ -41,8 +41,7 @@ import FreeRoomsSidebar from '../FreeRoomsSidebar';
 import chatService from '../../services/chatService';
 import { adminService } from '../../services/adminService';
 import { ThemeToggle } from '../ThemeToggle';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+
 import api from '../../services/api';
 
 interface MainLayoutProps {

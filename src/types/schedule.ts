@@ -14,6 +14,7 @@ export interface Schedule {
   description?: string;
   isExam?: boolean;
   examName?: string;
+  group?: string;
 }
 
 export interface CreateScheduleDto {

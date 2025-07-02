@@ -77,7 +77,6 @@ const PublicSchedules: React.FC = () => {
   });
   
   // Filter states
-  const [department, setDepartment] = useState<string>('');
   const [professor, setProfessor] = useState<string>('');
   const [course, setCourse] = useState<string>('');
   const [room, setRoom] = useState<string>('');
@@ -85,7 +84,6 @@ const PublicSchedules: React.FC = () => {
   const [academicYear, setAcademicYear] = useState<string>('');
   const [years, setYears] = useState<number[]>([]);
   const [academicYears, setAcademicYears] = useState<string[]>([]);
-  const [departmentOptions, setDepartmentOptions] = useState<string[]>([]);
   const [professorOptions, setProfessorOptions] = useState<string[]>([]);
   const [courseOptions, setCourseOptions] = useState<string[]>([]);
   const [roomOptions, setRoomOptions] = useState<string[]>([]);
@@ -183,7 +181,8 @@ const PublicSchedules: React.FC = () => {
   const weekSchedules = organizeSchedulesByWeek(filtered);
 
   useEffect(() => {
-    // Fetch study programs for filter options only
+    // Only fetch study programs, professors, courses, rooms for filter options
+    // Don't fetch schedules until user applies filters
     adminService.getAllStudyPrograms().then((programs: StudyProgram[]) => {
       setStudyProgramOptions(programs);
     });
@@ -196,9 +195,6 @@ const PublicSchedules: React.FC = () => {
     adminService.getAllRooms().then((rooms: any[]) => {
       setRoomOptions(rooms.map((r) => r.rName || r.name || ''));
     });
-    adminService.getAllDepartments && adminService.getAllDepartments().then((depts: any[]) => {
-      setDepartmentOptions(depts.map((d) => d.dName || d.name || ''));
-    });
   }, []);
 
   const fetchSchedules = async () => {
@@ -206,25 +202,51 @@ const PublicSchedules: React.FC = () => {
     try {
       let url = '/schedule/dashboard-full';
       const params = new URLSearchParams();
+      
+      // Only add parameters if they have values
+      if (pendingStudyProgram) {
+        params.append('studyProgram', pendingStudyProgram);
+      }
+      if (pendingProfessor) {
+        params.append('professor', pendingProfessor);
+      }
+      if (pendingCourse) {
+        params.append('course', pendingCourse);
+      }
+      if (pendingRoom) {
+        params.append('room', pendingRoom);
+      }
       if (pendingYear) {
         params.append('year', pendingYear);
       }
+      if (pendingAcademicYear) {
+        params.append('academicYear', pendingAcademicYear);
+      }
+      
+      // Only make the request if there are actual filters
       if (params.toString()) {
         url += `?${params.toString()}`;
+        const res = await api.get(url);
+        setSchedules(res.data);
+        setFiltered(res.data);
+        
+        // Update filter options from the fetched data
+        setProfessorOptions(Array.from(new Set(res.data.map((s: FullSchedule) => `${s.professorFirstName || ''} ${s.professorLastName || ''}`.trim()).filter(Boolean))));
+        setCourseOptions(Array.from(new Set(res.data.map((s: FullSchedule) => s.courseName).filter(Boolean))));
+        setRoomOptions(Array.from(new Set(res.data.map((s: FullSchedule) => s.roomName).filter(Boolean))));
+        
+        // Build years (1, 2, 3)
+        const uniqueYears = Array.from(new Set(res.data.map((s: FullSchedule) => s.year))).sort((a, b) => (a as number) - (b as number));
+        setYears(uniqueYears as number[]);
+        
+        // Build academic years
+        const uniqueAcademicYears = Array.from(new Set(res.data.map((s: FullSchedule) => s.academicYear).filter(Boolean))).sort();
+        setAcademicYears(uniqueAcademicYears as string[]);
+      } else {
+        // No filters applied, clear the data
+        setSchedules([]);
+        setFiltered([]);
       }
-      const res = await api.get(url);
-      setSchedules(res.data);
-      setFiltered(res.data);
-      setDepartmentOptions(Array.from(new Set(res.data.map((s: FullSchedule) => s.departmentName).filter(Boolean))));
-      setProfessorOptions(Array.from(new Set(res.data.map((s: FullSchedule) => `${s.professorFirstName || ''} ${s.professorLastName || ''}`.trim()).filter(Boolean))));
-      setCourseOptions(Array.from(new Set(res.data.map((s: FullSchedule) => s.courseName).filter(Boolean))));
-      setRoomOptions(Array.from(new Set(res.data.map((s: FullSchedule) => s.roomName).filter(Boolean))));
-      // Build years (1, 2, 3)
-      const uniqueYears = Array.from(new Set(res.data.map((s: FullSchedule) => s.year))).sort((a, b) => (a as number) - (b as number));
-      setYears(uniqueYears as number[]);
-      // Build academic years
-      const uniqueAcademicYears = Array.from(new Set(res.data.map((s: FullSchedule) => s.academicYear).filter(Boolean))).sort();
-      setAcademicYears(uniqueAcademicYears as string[]);
     } catch (err) {
       setSchedules([]);
       setFiltered([]);
@@ -236,27 +258,6 @@ const PublicSchedules: React.FC = () => {
   const handleSearch = async () => {
     setSearchPerformed(true);
     await fetchSchedules();
-    // Filtering will be applied after fetch
-    let result = schedules;
-    if (pendingStudyProgram) {
-      result = result.filter(s => s.studyProgramName?.toLowerCase().includes(pendingStudyProgram.toLowerCase()));
-    }
-    if (pendingProfessor) {
-      result = result.filter(s => (`${s.professorFirstName || ''} ${s.professorLastName || ''}`.toLowerCase().includes(pendingProfessor.toLowerCase())));
-    }
-    if (pendingCourse) {
-      result = result.filter(s => s.courseName.toLowerCase().includes(pendingCourse.toLowerCase()));
-    }
-    if (pendingRoom) {
-      result = result.filter(s => s.roomName.toLowerCase().includes(pendingRoom.toLowerCase()));
-    }
-    if (pendingYear) {
-      result = result.filter(s => s.year.toString() === pendingYear);
-    }
-    if (pendingAcademicYear) {
-      result = result.filter(s => s.academicYear === pendingAcademicYear);
-    }
-    setFiltered(result);
   };
 
   return (
@@ -281,15 +282,6 @@ const PublicSchedules: React.FC = () => {
               inputValue={pendingStudyProgram}
               onInputChange={(_, value) => setPendingStudyProgram(value)}
               renderInput={params => <TextField {...params} label="Study Program" variant="outlined" size="small" />}
-              sx={{ width: 160, minWidth: 120 }}
-            />
-            <Autocomplete
-              options={departmentOptions}
-              value={department}
-              onChange={(_, value) => setDepartment(value || '')}
-              inputValue={department}
-              onInputChange={(_, value) => setDepartment(value)}
-              renderInput={params => <TextField {...params} label="Department" variant="outlined" size="small" />}
               sx={{ width: 160, minWidth: 120 }}
             />
             <Autocomplete
@@ -425,9 +417,6 @@ const PublicSchedules: React.FC = () => {
                                   <Typography variant="caption" display="block">{s.professorFirstName} {s.professorLastName}</Typography>
                                   {s.studyProgramName && (
                                     <Typography variant="caption" display="block">{s.studyProgramName}</Typography>
-                                  )}
-                                  {s.departmentName && (
-                                    <Typography variant="caption" display="block">{s.departmentName}</Typography>
                                   )}
                                   <Typography variant="caption" display="block">Year {s.year}, {s.academicYear}</Typography>
                                 </Box>

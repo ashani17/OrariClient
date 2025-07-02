@@ -22,14 +22,14 @@ import {
   CardContent,
   Grid,
   IconButton,
-  useTheme
+  useTheme,
+  Alert
 } from '@mui/material';
 import { ChevronLeft, ChevronRight } from '@mui/icons-material';
 import api from '../../services/api';
 import { adminService } from '../../services/adminService';
 import type { StudyProgram } from '../../types';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import { PdfService } from '../../services/pdfService';
 
 interface FullSchedule {
   sId: number;
@@ -54,6 +54,7 @@ interface FullSchedule {
   departmentName?: string;
   year: number; // 1, 2, or 3
   academicYear: string; // e.g., "2023-2026"
+  group?: string;
 }
 
 interface WeekSchedule {
@@ -67,6 +68,7 @@ const AllSchedulesDashboard: React.FC = () => {
   const [schedules, setSchedules] = useState<FullSchedule[]>([]);
   const [filtered, setFiltered] = useState<FullSchedule[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [searchPerformed, setSearchPerformed] = useState(false);
   const [professor, setProfessor] = useState<string>('');
   const [course, setCourse] = useState<string>('');
@@ -85,6 +87,12 @@ const AllSchedulesDashboard: React.FC = () => {
   const [pendingAcademicYear, setPendingAcademicYear] = useState<string>('');
   const [studyProgramOptions, setStudyProgramOptions] = useState<StudyProgram[]>([]);
   const [pendingStudyProgram, setPendingStudyProgram] = useState<string>('');
+  const [groupOptions, setGroupOptions] = useState<string[]>([]);
+  const [pendingGroup, setPendingGroup] = useState('');
+  
+  // Predefined group options
+  const predefinedGroups = ['A1', 'A2', 'B1', 'B2'];
+  
   const [currentWeekStart, setCurrentWeekStart] = useState(() => {
     const now = new Date();
     const day = now.getDay();
@@ -93,78 +101,191 @@ const AllSchedulesDashboard: React.FC = () => {
   });
 
   useEffect(() => {
-    // Fetch study programs, professors, courses, rooms for filter options only
+    console.log('🚀 AllSchedulesDashboard component mounted');
+    console.log('📚 Loading initial filter options...');
+    
+    // Only fetch study programs, professors, courses, rooms for filter options
+    // Don't fetch schedules until user applies filters
     adminService.getAllStudyPrograms().then((programs: StudyProgram[]) => {
+      console.log('📚 Study programs loaded:', programs);
+      console.log('📚 Study program names:', programs.map(p => p.spName));
       setStudyProgramOptions(programs);
+    }).catch(err => {
+      console.error('❌ Error loading study programs:', err);
     });
+    
     adminService.getAllProfessors().then((profs: any[]) => {
-      setProfessorOptions(profs.map((p) => `${p.firstName || p.name || ''} ${p.lastName || p.surname || ''}`.trim()));
+      const professorNames = profs.map((p) => `${p.firstName || p.name || ''} ${p.lastName || p.surname || ''}`.trim());
+      console.log('👨‍🏫 Professors loaded:', profs);
+      console.log('👨‍🏫 Professor names:', professorNames);
+      setProfessorOptions(professorNames);
+    }).catch(err => {
+      console.error('❌ Error loading professors:', err);
     });
+    
     adminService.getAllCourses().then((courses: any[]) => {
-      setCourseOptions(courses.map((c) => c.cName || c.CName || c.name || ''));
+      const courseNames = courses.map((c) => c.cName || c.CName || c.name || '');
+      console.log('📖 Courses loaded:', courses);
+      console.log('📖 Course names:', courseNames);
+      setCourseOptions(courseNames);
+    }).catch(err => {
+      console.error('❌ Error loading courses:', err);
     });
+    
     adminService.getAllRooms().then((rooms: any[]) => {
-      setRoomOptions(rooms.map((r) => r.rName || r.name || ''));
+      const roomNames = rooms.map((r) => r.rName || r.name || '');
+      console.log('🏫 Rooms loaded:', rooms);
+      console.log('🏫 Room names:', roomNames);
+      setRoomOptions(roomNames);
+    }).catch(err => {
+      console.error('❌ Error loading rooms:', err);
     });
+    
+    // Set predefined group options
+    console.log('👥 Setting predefined groups:', predefinedGroups);
+    setGroupOptions(predefinedGroups);
+    
+    console.log('✅ Initial data loading completed');
   }, []);
 
   const fetchSchedules = async () => {
     setLoading(true);
+    console.log('🔄 Starting fetchSchedules...');
+    console.log('📋 Current filters:', {
+      studyProgram: pendingStudyProgram,
+      professor: pendingProfessor,
+      course: pendingCourse,
+      room: pendingRoom,
+      year: pendingYear,
+      academicYear: pendingAcademicYear,
+      group: pendingGroup
+    });
+    
     try {
       let url = '/schedule/dashboard-full';
       const params = new URLSearchParams();
+      
+      // Only add parameters if they have values
+      if (pendingStudyProgram) {
+        params.append('studyProgram', pendingStudyProgram);
+        console.log('📚 Adding studyProgram filter:', pendingStudyProgram);
+      }
+      if (pendingProfessor) {
+        params.append('professor', pendingProfessor);
+        console.log('👨‍🏫 Adding professor filter:', pendingProfessor);
+      }
+      if (pendingCourse) {
+        params.append('course', pendingCourse);
+        console.log('📖 Adding course filter:', pendingCourse);
+      }
+      if (pendingRoom) {
+        params.append('room', pendingRoom);
+        console.log('🏫 Adding room filter:', pendingRoom);
+      }
       if (pendingYear) {
         params.append('year', pendingYear);
+        console.log('📅 Adding year filter:', pendingYear);
       }
+      if (pendingAcademicYear) {
+        params.append('academicYear', pendingAcademicYear);
+        console.log('🎓 Adding academicYear filter:', pendingAcademicYear);
+      }
+      if (pendingGroup) {
+        params.append('group', pendingGroup);
+        console.log('👥 Adding group filter:', pendingGroup);
+      }
+      
+      // Only make the request if there are actual filters
       if (params.toString()) {
         url += `?${params.toString()}`;
+        console.log('🌐 Making API request to:', url);
+        
+        const res = await api.get(url);
+        console.log('✅ API Response received:', res);
+        console.log('📊 Raw data:', res.data);
+        console.log('📈 Number of schedules received:', res.data.length);
+        
+        setSchedules(res.data);
+        setFiltered(res.data);
+        
+        // Log sample data
+        if (res.data.length > 0) {
+          console.log('📋 Sample schedule data:', res.data[0]);
+          console.log('📋 Sample schedule with study program:', {
+            courseName: res.data[0].courseName,
+            studyProgramName: res.data[0].studyProgramName,
+            group: res.data[0].group,
+            date: res.data[0].date,
+            professor: `${res.data[0].professorFirstName} ${res.data[0].professorLastName}`
+          });
+        }
+        
+        // Update filter options from the fetched data
+        const professorOptionsFromData = Array.from(new Set(res.data.map((s: FullSchedule) => `${s.professorFirstName || ''} ${s.professorLastName || ''}`.trim()).filter(Boolean)));
+        const courseOptionsFromData = Array.from(new Set(res.data.map((s: FullSchedule) => s.courseName).filter(Boolean)));
+        const roomOptionsFromData = Array.from(new Set(res.data.map((s: FullSchedule) => s.roomName).filter(Boolean)));
+        
+        console.log('👨‍🏫 Professor options from data:', professorOptionsFromData);
+        console.log('📖 Course options from data:', courseOptionsFromData);
+        console.log('🏫 Room options from data:', roomOptionsFromData);
+        
+        setProfessorOptions(professorOptionsFromData);
+        setCourseOptions(courseOptionsFromData);
+        setRoomOptions(roomOptionsFromData);
+        
+        // Build years (1, 2, 3)
+        const uniqueYears = Array.from(new Set(res.data.map((s: FullSchedule) => s.year)))
+          .filter(year => year !== undefined && year !== null && !isNaN(year))
+          .sort((a, b) => (a as number) - (b as number));
+        console.log('📅 Years from data:', uniqueYears);
+        setYears(uniqueYears as number[]);
+        
+        // Build academic years
+        const uniqueAcademicYears = Array.from(new Set(res.data.map((s: FullSchedule) => s.academicYear).filter(Boolean))).sort();
+        console.log('🎓 Academic years from data:', uniqueAcademicYears);
+        setAcademicYears(uniqueAcademicYears as string[]);
+        
+        // Check for study programs
+        const studyProgramsInData = Array.from(new Set(res.data.map((s: FullSchedule) => s.studyProgramName).filter(Boolean)));
+        console.log('📚 Study programs in data:', studyProgramsInData);
+        
+        // Check for groups
+        const groupsInData = Array.from(new Set(res.data.map((s: FullSchedule) => s.group).filter(Boolean)));
+        console.log('👥 Groups in data:', groupsInData);
+        
+      } else {
+        console.log('⚠️ No filters applied, clearing data');
+        // No filters applied, clear the data
+        setSchedules([]);
+        setFiltered([]);
       }
-      const res = await api.get(url);
-      setSchedules(res.data);
-      setFiltered(res.data);
-      setProfessorOptions(Array.from(new Set(res.data.map((s: FullSchedule) => `${s.professorFirstName || ''} ${s.professorLastName || ''}`.trim()).filter(Boolean))));
-      setCourseOptions(Array.from(new Set(res.data.map((s: FullSchedule) => s.courseName).filter(Boolean))));
-      setRoomOptions(Array.from(new Set(res.data.map((s: FullSchedule) => s.roomName).filter(Boolean))));
-      // Build years (1, 2, 3)
-      const uniqueYears = Array.from(new Set(res.data.map((s: FullSchedule) => s.year)))
-        .filter(year => year !== undefined && year !== null && !isNaN(year))
-        .sort((a, b) => (a as number) - (b as number));
-      setYears(uniqueYears as number[]);
-      // Build academic years
-      const uniqueAcademicYears = Array.from(new Set(res.data.map((s: FullSchedule) => s.academicYear).filter(Boolean))).sort();
-      setAcademicYears(uniqueAcademicYears as string[]);
     } catch (err) {
+      console.error('❌ Error fetching schedules:', err);
+      console.error('❌ Error details:', {
+        message: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : undefined
+      });
       setSchedules([]);
       setFiltered([]);
     } finally {
       setLoading(false);
+      console.log('✅ fetchSchedules completed');
     }
   };
 
   const handleSearch = async () => {
+    console.log('🔍 Search button clicked!');
+    console.log('🎯 Search triggered with filters:', {
+      studyProgram: pendingStudyProgram,
+      professor: pendingProfessor,
+      course: pendingCourse,
+      room: pendingRoom,
+      year: pendingYear,
+      academicYear: pendingAcademicYear,
+      group: pendingGroup
+    });
     setSearchPerformed(true);
     await fetchSchedules();
-    // Filtering will be applied after fetch
-    let result = schedules;
-    if (pendingStudyProgram) {
-      result = result.filter(s => s.studyProgramName?.toLowerCase().includes(pendingStudyProgram.toLowerCase()));
-    }
-    if (pendingProfessor) {
-      result = result.filter(s => (`${s.professorFirstName || ''} ${s.professorLastName || ''}`.toLowerCase().includes(pendingProfessor.toLowerCase())));
-    }
-    if (pendingCourse) {
-      result = result.filter(s => s.courseName.toLowerCase().includes(pendingCourse.toLowerCase()));
-    }
-    if (pendingRoom) {
-      result = result.filter(s => s.roomName.toLowerCase().includes(pendingRoom.toLowerCase()));
-    }
-    if (pendingYear) {
-      result = result.filter(s => s.year.toString() === pendingYear);
-    }
-    if (pendingAcademicYear) {
-      result = result.filter(s => s.academicYear === pendingAcademicYear);
-    }
-    setFiltered(result);
   };
 
   // Helper function to get week start (Monday)
@@ -211,55 +332,71 @@ const AllSchedulesDashboard: React.FC = () => {
     setCurrentWeekStart(new Date(now.setDate(diff)));
   };
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
+    try {
     // Get all schedules for the current week
     const weekStart = getWeekStart(currentWeekStart);
     const weekEnd = getWeekEnd(currentWeekStart);
-    const weekDates = [...Array(7)].map((_, i) => {
+      const weekDates = Array.from({ length: 7 }, (_, i) => {
       const d = new Date(weekStart);
       d.setDate(weekStart.getDate() + i);
       return d.toISOString().split('T')[0];
     });
     const weekSchedulesFlat = filtered.filter(s => weekDates.includes(s.date));
-    // Prepare rows
-    const tableRows = weekSchedulesFlat.map(s => [
-      new Date(s.date).toLocaleDateString(),
-      getDayName(s.date),
-      `${s.startTime.substring(0,5)} - ${s.endTime.substring(0,5)}`,
-      s.roomName,
-      s.courseName,
-      `${s.professorFirstName || ''} ${s.professorLastName || ''}`.trim(),
-    ]);
-    const doc = new jsPDF();
-    const isDark = theme.palette.mode === 'dark';
-    (doc as any).autoTable({
-      head: [[
-        'Date',
-        'Day',
-        'Time',
-        'Room',
-        'Course',
-        'Professor',
-      ]],
-      body: tableRows,
-      styles: {
-        textColor: isDark ? '#fff' : '#222',
-        lineColor: isDark ? '#888' : '#222',
-        fillColor: isDark ? '#23272f' : '#fff',
-      },
-      headStyles: {
-        fillColor: isDark ? '#23272f' : '#f5f5f5',
-        textColor: isDark ? '#fff' : '#222',
-        lineColor: isDark ? '#888' : '#222',
-      },
-      alternateRowStyles: {
-        fillColor: isDark ? '#2c313a' : '#fafafa',
-      },
-      tableLineColor: isDark ? '#888' : '#222',
-      tableLineWidth: 0.1,
-    });
-    doc.save('week-schedule.pdf');
+      
+      // Create formatted content for table parsing
+      const contentLines: string[] = [];
+      
+      if (weekSchedulesFlat.length === 0) {
+        contentLines.push('No schedules found for this week.');
+      } else {
+        weekSchedulesFlat.forEach(schedule => {
+          contentLines.push(`Day: ${getDayName(schedule.date)}`);
+          contentLines.push(`Time: ${schedule.startTime.substring(0,5)} - ${schedule.endTime.substring(0,5)}`);
+          contentLines.push(`Course: ${schedule.courseName}`);
+          contentLines.push(`Professor: ${schedule.professorFirstName || ''} ${schedule.professorLastName || ''}`.trim());
+          contentLines.push(`Room: ${schedule.roomName}`);
+          contentLines.push(`Semester: ${schedule.year} (${schedule.academicYear})`);
+          contentLines.push('');
+        });
+      }
+
+      const content = contentLines.join('\n');
+
+      // Create filename with study programs, years, and week info
+      const uniquePrograms = [...new Set(weekSchedulesFlat.map(s => s.studyProgramName).filter(Boolean))];
+      const uniqueYears = [...new Set(weekSchedulesFlat.map(s => s.academicYear).filter(Boolean))];
+      const weekInfo = `${weekStart.toISOString().slice(0, 10)}_${weekEnd.toISOString().slice(0, 10)}`;
+      
+      const programNames = uniquePrograms.length > 0 ? uniquePrograms.join('_') : 'AllPrograms';
+      const years = uniqueYears.length > 0 ? uniqueYears.join('_') : 'AllYears';
+      const filename = `${programNames}_${years}_${weekInfo}`;
+
+      const result = await PdfService.generatePdf({
+        title: 'Schedule Dashboard Report',
+        content: content,
+        filename: filename
+      });
+
+      PdfService.downloadPdf(result.blob, result.filename);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      setError('Failed to generate PDF');
+    }
   };
+
+  // Log when filtered data changes
+  useEffect(() => {
+    console.log('📊 Filtered data updated:', {
+      totalSchedules: schedules.length,
+      filteredSchedules: filtered.length,
+      searchPerformed: searchPerformed
+    });
+    
+    if (filtered.length > 0) {
+      console.log('📋 First filtered schedule:', filtered[0]);
+    }
+  }, [filtered, schedules, searchPerformed]);
 
   return (
     <Box p={4}>
@@ -329,10 +466,25 @@ const AllSchedulesDashboard: React.FC = () => {
             {academicYears.map(ay => <MenuItem key={ay} value={ay}>{ay}</MenuItem>)}
           </Select>
         </FormControl>
+        <Autocomplete
+          options={groupOptions}
+          value={pendingGroup}
+          onChange={(_, value) => setPendingGroup(value || '')}
+          inputValue={pendingGroup}
+          onInputChange={(_, value) => setPendingGroup(value)}
+          renderInput={params => <TextField {...params} label="Group" variant="outlined" size="small" />}
+          sx={{ width: 120 }}
+        />
         <Button variant="contained" color="primary" onClick={handleSearch} sx={{ height: 40 }}>
           Search
         </Button>
       </Box>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
 
       {loading ? (
         <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
@@ -363,7 +515,7 @@ const AllSchedulesDashboard: React.FC = () => {
             <TableHead>
               <TableRow>
                 <TableCell></TableCell>
-                {[...Array(7)].map((_, i) => {
+                {Array.from({ length: 7 }, (_, i) => {
                   const weekStart = getWeekStart(currentWeekStart);
                   const date = new Date(weekStart);
                   date.setDate(weekStart.getDate() + i);
@@ -381,7 +533,7 @@ const AllSchedulesDashboard: React.FC = () => {
                 // Get all schedules for the current week
                 const weekStart = getWeekStart(currentWeekStart);
                 const weekEnd = getWeekEnd(currentWeekStart);
-                const weekDates = [...Array(7)].map((_, i) => {
+                const weekDates = Array.from({ length: 7 }, (_, i) => {
                   const d = new Date(weekStart);
                   d.setDate(weekStart.getDate() + i);
                   return d.toISOString().split('T')[0];

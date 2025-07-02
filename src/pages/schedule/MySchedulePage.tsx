@@ -4,8 +4,7 @@ import api from '../../services/api';
 import {
   Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, CircularProgress, Alert, Button, Stack, TextField
 } from '@mui/material';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import { PdfService } from '../../services/pdfService';
 import { useTheme } from '@mui/material/styles';
 
 interface Schedule {
@@ -147,51 +146,44 @@ const MySchedulePage: React.FC = () => {
   const handleNextWeek = () => setWeekStart(prev => addDays(prev, 7));
   const handleToday = () => setWeekStart(getMonday(new Date()));
 
-  const handleDownloadPDF = () => {
-    // Prepare rows for the current week
-    const tableRows: any[] = [];
-    DAYS.forEach(day => {
-      TIME_SLOTS.forEach(slot => {
-        const sch = grid[day.key][slot];
-        if (sch) {
-          tableRows.push([
-            day.label,
-            `${slot} - ${String(Number(slot.split(':')[0]) + 1).padStart(2, '0')}:00`,
-            sch.course?.cName || sch.cId,
-            sch.room?.rName || sch.rId,
-            sch.startTime + ' - ' + sch.endTime,
-          ]);
-        }
+  const handleDownloadPDF = async () => {
+    try {
+      // Prepare content for the current week in table format
+      const contentLines: string[] = [];
+      
+      DAYS.forEach(day => {
+        TIME_SLOTS.forEach(slot => {
+          const sch = grid[day.key][slot];
+          if (sch) {
+            contentLines.push(`Day: ${day.label}`);
+            contentLines.push(`Time: ${slot} - ${String(Number(slot.split(':')[0]) + 1).padStart(2, '0')}:00`);
+            contentLines.push(`Course: ${sch.course?.cName || sch.cId}`);
+            contentLines.push(`Room: ${sch.room?.rName || sch.rId}`);
+            contentLines.push(`Professor: ${sch.professorId || 'N/A'}`);
+            contentLines.push(`Semester: ${sch.date ? new Date(sch.date).getFullYear() : 'N/A'}`);
+            contentLines.push('');
+          }
+        });
       });
-    });
-    const doc = new jsPDF();
-    const isDark = theme.palette.mode === 'dark';
-    doc.autoTable({
-      head: [[
-        'Day',
-        'Time',
-        'Course',
-        'Room',
-        'Duration',
-      ]],
-      body: tableRows,
-      styles: {
-        textColor: isDark ? '#fff' : '#222',
-        lineColor: isDark ? '#888' : '#222',
-        fillColor: isDark ? '#23272f' : '#fff',
-      },
-      headStyles: {
-        fillColor: isDark ? '#23272f' : '#f5f5f5',
-        textColor: isDark ? '#fff' : '#222',
-        lineColor: isDark ? '#888' : '#222',
-      },
-      alternateRowStyles: {
-        fillColor: isDark ? '#2c313a' : '#fafafa',
-      },
-      tableLineColor: isDark ? '#888' : '#222',
-      tableLineWidth: 0.1,
-    });
-    doc.save('my-week-schedule.pdf');
+
+      const content = contentLines.join('\n');
+
+      // Create filename with user info and week
+      const userType = user?.role || 'User';
+      const weekInfo = `${weekStart.toISOString().slice(0, 10)}_${weekEnd.toISOString().slice(0, 10)}`;
+      const filename = `MySchedule_${userType}_${weekInfo}`;
+
+      const result = await PdfService.generatePdf({
+        title: 'My Weekly Schedule',
+        content: content,
+        filename: filename
+      });
+
+      PdfService.downloadPdf(result.blob, result.filename);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      setError('Failed to generate PDF');
+    }
   };
 
   return (

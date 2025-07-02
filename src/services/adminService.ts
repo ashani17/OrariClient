@@ -422,7 +422,7 @@ class AdminService {
 
   async getStudyProgramWithCourses(id: number): Promise<StudyProgramWithCourses> {
     try {
-      const response = await api.get(`/studyprogram/${id}`);
+      const response = await api.get(`/studyprogram/${id}/with-courses`);
       return response.data;
     } catch (error) {
       if (error instanceof AxiosError) {

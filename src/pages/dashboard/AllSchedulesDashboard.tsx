@@ -229,16 +229,16 @@ const AllSchedulesDashboard: React.FC = () => {
         console.log('📖 Course options from data:', courseOptionsFromData);
         console.log('🏫 Room options from data:', roomOptionsFromData);
         
-        setProfessorOptions(professorOptionsFromData);
-        setCourseOptions(courseOptionsFromData);
-        setRoomOptions(roomOptionsFromData);
+        setProfessorOptions(professorOptionsFromData.map(String));
+        setCourseOptions(courseOptionsFromData.map(String));
+        setRoomOptions(roomOptionsFromData.map(String));
         
         // Build years (1, 2, 3)
         const uniqueYears = Array.from(new Set(res.data.map((s: FullSchedule) => s.year)))
           .filter(year => year !== undefined && year !== null && !isNaN(year))
           .sort((a, b) => (a as number) - (b as number));
         console.log('📅 Years from data:', uniqueYears);
-        setYears(uniqueYears as number[]);
+        setYears((uniqueYears as (number | undefined)[]).filter((y): y is number => typeof y === 'number'));
         
         // Build academic years
         const uniqueAcademicYears = Array.from(new Set(res.data.map((s: FullSchedule) => s.academicYear).filter(Boolean))).sort();
@@ -560,14 +560,14 @@ const AllSchedulesDashboard: React.FC = () => {
                       return (
                         <TableCell key={dayIdx} align="center" sx={{ verticalAlign: 'top', minWidth: 140, background: theme.palette.background.default }}>
                           {cellSchedules.length === 0 ? null : cellSchedules.map(s => (
-                            <Box key={s.sId} sx={{ mb: 1, p: 1, borderRadius: 1, background: theme.palette.mode === 'dark' ? theme.palette.background.paper : '#23272f', border: `1px solid ${theme.palette.divider}`, display: 'inline-block', minWidth: 120 }}>
-                              <Typography variant="body2" fontWeight="bold">{s.courseName}</Typography>
-                              <Typography variant="caption" display="block">{s.roomName}</Typography>
-                              <Typography variant="caption" display="block">{s.professorFirstName} {s.professorLastName}</Typography>
+                            <Box key={s.sId} sx={{ mb: 1, p: 1, borderRadius: 1, background: theme.palette.background.paper, border: `1px solid ${theme.palette.divider}`, display: 'inline-block', minWidth: 120, color: theme.palette.text.primary }}>
+                              <Typography variant="body2" fontWeight="bold" color="inherit">{s.courseName}</Typography>
+                              <Typography variant="caption" display="block" color="inherit">{s.roomName}</Typography>
+                              <Typography variant="caption" display="block" color="inherit">{s.professorFirstName} {s.professorLastName}</Typography>
                               {s.studyProgramName && (
-                                <Typography variant="caption" display="block">{s.studyProgramName}</Typography>
+                                <Typography variant="caption" display="block" color="inherit">{s.studyProgramName}</Typography>
                               )}
-                              <Typography variant="caption" display="block">Year {s.year}, {s.academicYear}</Typography>
+                              <Typography variant="caption" display="block" color="inherit">Year {s.year}, {s.academicYear}</Typography>
                             </Box>
                           ))}
                         </TableCell>

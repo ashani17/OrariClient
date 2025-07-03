@@ -30,6 +30,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { adminService } from '../services/adminService';
 import type { StudyProgram } from '../types';
+import { ThemeToggle } from '../components/ThemeToggle';
 
 interface FullSchedule {
   sId: number;
@@ -62,7 +63,12 @@ interface WeekSchedule {
   schedules: FullSchedule[];
 }
 
-const PublicSchedules: React.FC = () => {
+interface PublicSchedulesProps {
+  mode: 'light' | 'dark';
+  onToggleTheme: () => void;
+}
+
+const PublicSchedules: React.FC<PublicSchedulesProps> = ({ mode, onToggleTheme }) => {
   const theme = useTheme();
   const [schedules, setSchedules] = useState<FullSchedule[]>([]);
   const [filtered, setFiltered] = useState<FullSchedule[]>([]);
@@ -336,6 +342,7 @@ const PublicSchedules: React.FC = () => {
             <Button variant="contained" color="primary" size="small" onClick={handleSearch} sx={{ height: 36, minWidth: 90 }}>
               Search
             </Button>
+            <ThemeToggle mode={mode} onToggle={onToggleTheme} />
           </Box>
           {loading ? (
             <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
@@ -411,17 +418,17 @@ const PublicSchedules: React.FC = () => {
                           return (
                             <TableCell key={dayIdx} align="center" sx={{ verticalAlign: 'top', minWidth: 140, background: theme.palette.background.default }}>
                               {cellSchedules.length === 0 ? null : cellSchedules.map(s => (
-                                <Box key={s.sId} sx={{ mb: 1, p: 1, borderRadius: 1, background: theme.palette.mode === 'dark' ? theme.palette.background.paper : '#23272f', border: `1px solid ${theme.palette.divider}`, display: 'inline-block', minWidth: 120 }}>
-                                  <Typography variant="body2" fontWeight="bold">{s.courseName}</Typography>
-                                  <Typography variant="caption" display="block">{s.roomName}</Typography>
-                                  <Typography variant="caption" display="block">{s.professorFirstName} {s.professorLastName}</Typography>
+                                <Box key={s.sId} sx={{ mb: 1, p: 1, borderRadius: 1, background: theme.palette.background.paper, border: `1px solid ${theme.palette.divider}`, display: 'inline-block', minWidth: 120, color: theme.palette.text.primary }}>
+                                  <Typography variant="body2" fontWeight="bold" color="inherit">{s.courseName}</Typography>
+                                  <Typography variant="caption" display="block" color="inherit">{s.roomName}</Typography>
+                                  <Typography variant="caption" display="block" color="inherit">{s.professorFirstName} {s.professorLastName}</Typography>
                                   {s.studyProgramName && (
-                                    <Typography variant="caption" display="block">{s.studyProgramName}</Typography>
+                                    <Typography variant="caption" display="block" color="inherit">{s.studyProgramName}</Typography>
                                   )}
-                                  <Typography variant="caption" display="block">Year {s.year}, {s.academicYear}</Typography>
+                                  <Typography variant="caption" display="block" color="inherit">Year {s.year}, {s.academicYear}</Typography>
                                 </Box>
                               ))}
-                      </TableCell>
+                            </TableCell>
                           );
                         })}
                       </TableRow>

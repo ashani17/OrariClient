@@ -114,7 +114,7 @@ function App() {
           <Route
             path="/schedules"
             element={
-              <PublicSchedules />
+              <PublicSchedules mode={mode} onToggleTheme={handleToggleTheme} />
             }
           />
           <Route

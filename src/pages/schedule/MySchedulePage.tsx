@@ -151,10 +151,10 @@ const MySchedulePage: React.FC = () => {
       // Prepare content for the current week in table format
       const contentLines: string[] = [];
       
-      DAYS.forEach(day => {
-        TIME_SLOTS.forEach(slot => {
-          const sch = grid[day.key][slot];
-          if (sch) {
+    DAYS.forEach(day => {
+      TIME_SLOTS.forEach(slot => {
+        const sch = grid[day.key][slot];
+        if (sch) {
             contentLines.push(`Day: ${day.label}`);
             contentLines.push(`Time: ${slot} - ${String(Number(slot.split(':')[0]) + 1).padStart(2, '0')}:00`);
             contentLines.push(`Course: ${sch.course?.cName || sch.cId}`);
@@ -162,9 +162,9 @@ const MySchedulePage: React.FC = () => {
             contentLines.push(`Professor: ${sch.professorId || 'N/A'}`);
             contentLines.push(`Semester: ${sch.date ? new Date(sch.date).getFullYear() : 'N/A'}`);
             contentLines.push('');
-          }
-        });
+        }
       });
+    });
 
       const content = contentLines.join('\n');
 
